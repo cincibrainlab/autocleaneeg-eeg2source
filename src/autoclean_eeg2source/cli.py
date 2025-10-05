@@ -698,7 +698,7 @@ def main():
     parser.add_argument(
         "--version",
         action="version",
-        version=f"autoclean-eeg2source {__version__}"
+        version=f"autocleaneeg-eeg2source {__version__}"
     )
     
     # Global options

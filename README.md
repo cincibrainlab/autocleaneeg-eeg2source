@@ -121,7 +121,7 @@ UV is a blazing-fast Python package installer and resolver that significantly im
 pip install uv
 
 # Install the package with UV
-uv pip install autoclean-eeg2source
+uv pip install autocleaneeg-eeg2source
 
 # Or install from source with UV
 uv pip install .
@@ -136,7 +136,7 @@ uv pip install -e ".[dev]"
 ### Install with traditional pip
 
 ```bash
-pip install autoclean-eeg2source
+pip install autocleaneeg-eeg2source
 ```
 
 ### Install from source
@@ -166,13 +166,13 @@ The package provides a command-line interface for processing EEG files.
 Convert EEG epochs to source-localized data:
 
 ```bash
-autoclean-eeg2source process input.set --output-dir ./results
+autocleaneeg-eeg2source process input.set --output-dir ./results
 ```
 
 Process multiple files in a directory:
 
 ```bash
-autoclean-eeg2source process ./data --output-dir ./results --recursive
+autocleaneeg-eeg2source process ./data --output-dir ./results --recursive
 ```
 
 ### Validation Command
@@ -180,13 +180,13 @@ autoclean-eeg2source process ./data --output-dir ./results --recursive
 Check if EEG files are valid:
 
 ```bash
-autoclean-eeg2source validate ./data
+autocleaneeg-eeg2source validate ./data
 ```
 
 Check montage compatibility:
 
 ```bash
-autoclean-eeg2source validate ./data --check-montage --montage "GSN-HydroCel-129"
+autocleaneeg-eeg2source validate ./data --check-montage --montage "GSN-HydroCel-129"
 ```
 
 ### Information Command
@@ -194,7 +194,7 @@ autoclean-eeg2source validate ./data --check-montage --montage "GSN-HydroCel-129
 Display information about an EEG file:
 
 ```bash
-autoclean-eeg2source info input.set
+autocleaneeg-eeg2source info input.set
 ```
 
 ### Performance Options
@@ -202,37 +202,37 @@ autoclean-eeg2source info input.set
 #### Robust Processing (Error Recovery)
 
 ```bash
-autoclean-eeg2source process input.set --robust --error-dir ./errors
+autocleaneeg-eeg2source process input.set --robust --error-dir ./errors
 ```
 
 #### Parallel Processing
 
 ```bash
-autoclean-eeg2source process ./data --parallel --n-jobs 4 --batch-processing
+autocleaneeg-eeg2source process ./data --parallel --n-jobs 4 --batch-processing
 ```
 
 #### Memory Optimization
 
 ```bash
-autoclean-eeg2source process input.set --optimized-memory --disk-offload --max-memory 8.0
+autocleaneeg-eeg2source process input.set --optimized-memory --disk-offload --max-memory 8.0
 ```
 
 #### Caching
 
 ```bash
-autoclean-eeg2source process ./data --enable-cache
+autocleaneeg-eeg2source process ./data --enable-cache
 ```
 
 #### GPU Acceleration
 
 ```bash
-autoclean-eeg2source process input.set --gpu --gpu-backend auto
+autocleaneeg-eeg2source process input.set --gpu --gpu-backend auto
 ```
 
 ### Benchmarking
 
 ```bash
-autoclean-eeg2source benchmark ./data --test-all --max-files 3
+autocleaneeg-eeg2source benchmark ./data --test-all --max-files 3
 ```
 
 ## Python API Usage
@@ -327,7 +327,7 @@ python -m twine upload --repository testpypi dist/*
 ### Install from TestPyPI
 
 ```bash
-pip install --index-url https://test.pypi.org/simple/ --no-deps autoclean-eeg2source
+pip install --index-url https://test.pypi.org/simple/ --no-deps autocleaneeg-eeg2source
 ```
 
 ## License

@@ -321,7 +321,7 @@
             <p class="lead">Transform your EEG data into source-localized representations using the Desikan-Killiany atlas regions with ease and efficiency</p>
             <div class="mt-4">
                 <a href="#installation" class="btn btn-light btn-lg me-2">Get Started</a>
-                <a href="https://github.com/cincibrainlab/autoclean-eeg2source" target="_blank" class="btn btn-outline-light btn-lg">View on GitHub</a>
+                <a href="https://github.com/cincibrainlab/autocleaneeg-eeg2source" target="_blank" class="btn btn-outline-light btn-lg">View on GitHub</a>
             </div>
         </div>
     </div>
@@ -337,10 +337,10 @@
                     <p>Whether you're analyzing individual recordings or processing large datasets, AutoClean EEG2Source offers the tools you need to transform scalp-level electrical activity into meaningful brain source estimations, with automatic error recovery, parallel processing, and GPU acceleration capabilities.</p>
                     <p>Designed with beginners in mind, the package features straightforward command-line and Python interfaces, detailed documentation, and optimized performance even on modest hardware.</p>
                     <p class="mt-3">
-                        <a href="https://pypi.org/project/autoclean-eeg2source/" target="_blank" class="btn btn-sm btn-primary me-2">
+                        <a href="https://pypi.org/project/autocleaneeg-eeg2source/" target="_blank" class="btn btn-sm btn-primary me-2">
                             <i class="bi bi-box"></i> PyPI Package
                         </a>
-                        <a href="https://github.com/cincibrainlab/autoclean-eeg2source" target="_blank" class="btn btn-sm btn-dark me-2">
+                        <a href="https://github.com/cincibrainlab/autocleaneeg-eeg2source" target="_blank" class="btn btn-sm btn-dark me-2">
                             <i class="bi bi-github"></i> GitHub Repository
                         </a>
                         <a href="https://mne.tools/stable/index.html" target="_blank" class="btn btn-sm btn-success">
@@ -456,13 +456,13 @@
 pip install uv
 
 # Install AutoClean EEG2Source with UV
-uv pip install autoclean-eeg2source</code></pre>
+uv pip install autocleaneeg-eeg2source</code></pre>
                     </div>
                     <p>For development installation:</p>
                     <div class="code-block">
                         <pre><code># Clone the repository
-git clone https://github.com/cincibrainlab/autoclean-eeg2source.git
-cd autoclean-eeg2source
+git clone https://github.com/cincibrainlab/autocleaneeg-eeg2source.git
+cd autocleaneeg-eeg2source
 
 # Install in development mode with UV
 uv pip install -e .
@@ -475,15 +475,15 @@ uv pip install -e ".[dev]"</code></pre>
                 <div class="tab-pane fade" id="pip" role="tabpanel" aria-labelledby="pip-tab">
                     <div class="code-block">
                         <pre><code># Install with pip
-pip install autoclean-eeg2source</code></pre>
+pip install autocleaneeg-eeg2source</code></pre>
                     </div>
                 </div>
                 
                 <div class="tab-pane fade" id="source" role="tabpanel" aria-labelledby="source-tab">
                     <div class="code-block">
                         <pre><code># Clone the repository
-git clone https://github.com/cincibrainlab/autoclean-eeg2source.git
-cd autoclean-eeg2source
+git clone https://github.com/cincibrainlab/autocleaneeg-eeg2source.git
+cd autocleaneeg-eeg2source
 
 # Install from source
 pip install .
@@ -534,7 +534,7 @@ uv pip install .</code></pre>
                     <h4>Check your data</h4>
                     <p>First, check information about your EEG file:</p>
                     <div class="code-block">
-                        <pre><code>autoclean-eeg2source info path/to/your/eegfile.set</code></pre>
+                        <pre><code>autocleaneeg-eeg2source info path/to/your/eegfile.set</code></pre>
                     </div>
                 </div>
                 
@@ -542,7 +542,7 @@ uv pip install .</code></pre>
                     <h4>Validate your data</h4>
                     <p>Ensure your file is suitable for processing:</p>
                     <div class="code-block">
-                        <pre><code>autoclean-eeg2source validate path/to/your/eegfile.set --check-montage</code></pre>
+                        <pre><code>autocleaneeg-eeg2source validate path/to/your/eegfile.set --check-montage</code></pre>
                     </div>
                 </div>
                 
@@ -550,7 +550,7 @@ uv pip install .</code></pre>
                     <h4>Process your data</h4>
                     <p>Run the source localization process:</p>
                     <div class="code-block">
-                        <pre><code>autoclean-eeg2source process path/to/your/eegfile.set --output-dir ./output</code></pre>
+                        <pre><code>autocleaneeg-eeg2source process path/to/your/eegfile.set --output-dir ./output</code></pre>
                     </div>
                 </div>
                 
@@ -605,12 +605,12 @@ else:
                             
                             <h5>Step 1: Validate all files in batch</h5>
                             <div class="code-block">
-                                <pre><code>autoclean-eeg2source validate /path/to/study/data --recursive --check-montage --save-validation</code></pre>
+                                <pre><code>autocleaneeg-eeg2source validate /path/to/study/data --recursive --check-montage --save-validation</code></pre>
                             </div>
                             
                             <h5>Step 2: Process files with parallel processing and memory optimization</h5>
                             <div class="code-block">
-                                <pre><code>autoclean-eeg2source process /path/to/study/data \
+                                <pre><code>autocleaneeg-eeg2source process /path/to/study/data \
   --output-dir ./source_data \
   --parallel --n-jobs 8 \
   --optimized-memory --max-memory 16.0 \
@@ -660,14 +660,14 @@ plt.show()</code></pre>
                             
                             <h5>Step 1: Run the benchmark</h5>
                             <div class="code-block">
-                                <pre><code>autoclean-eeg2source benchmark /path/to/sample/data --test-all --max-files 2</code></pre>
+                                <pre><code>autocleaneeg-eeg2source benchmark /path/to/sample/data --test-all --max-files 2</code></pre>
                             </div>
                             
                             <h5>Step 2: Process with the optimal method</h5>
                             <p>Based on the benchmark results, choose the most efficient processor for your system. For example, if the GPU processor showed the best performance:</p>
                             
                             <div class="code-block">
-                                <pre><code>autoclean-eeg2source process /path/to/study/data \
+                                <pre><code>autocleaneeg-eeg2source process /path/to/study/data \
   --output-dir ./source_data \
   --gpu --gpu-backend auto \
   --enable-cache \
@@ -677,7 +677,7 @@ plt.show()</code></pre>
                             <p>Alternatively, if parallel processing was faster:</p>
                             
                             <div class="code-block">
-                                <pre><code>autoclean-eeg2source process /path/to/study/data \
+                                <pre><code>autocleaneeg-eeg2source process /path/to/study/data \
   --output-dir ./source_data \
   --parallel --n-jobs -1 \
   --batch-processing \
@@ -706,7 +706,7 @@ plt.show()</code></pre>
                     <li><strong>Configuration File System:</strong> We're implementing a YAML-based configuration system to easily customize processing parameters without command-line arguments, making it simpler to use with custom datasets and research requirements.</li>
                     <li><strong>Enhanced Validation:</strong> Advanced data quality assessment tools to ensure your data meets requirements for reliable source localization.</li>
                 </ol>
-                <p class="mt-3 mb-0">These features are part of our commitment to making advanced neuroimaging techniques accessible to researchers of all experience levels. Stay updated by following our <a href="https://github.com/cincibrainlab/autoclean-eeg2source" target="_blank">GitHub repository</a>.</p>
+                <p class="mt-3 mb-0">These features are part of our commitment to making advanced neuroimaging techniques accessible to researchers of all experience levels. Stay updated by following our <a href="https://github.com/cincibrainlab/autocleaneeg-eeg2source" target="_blank">GitHub repository</a>.</p>
             </div>
             
             <div class="row mt-4">
@@ -747,7 +747,7 @@ plt.show()</code></pre>
                         <div class="card-body">
                             <p>We welcome contributions and feedback from the community! There are several ways to get involved:</p>
                             <ul>
-                                <li>Report bugs or suggest features through <a href="https://github.com/cincibrainlab/autoclean-eeg2source/issues" target="_blank">GitHub Issues</a></li>
+                                <li>Report bugs or suggest features through <a href="https://github.com/cincibrainlab/autocleaneeg-eeg2source/issues" target="_blank">GitHub Issues</a></li>
                                 <li>Contribute code via pull requests</li>
                                 <li>Share your use cases to help us improve the tool</li>
                                 <li>Cite our work in your publications</li>
@@ -803,10 +803,10 @@ plt.show()</code></pre>
                     <h5>AutoClean EEG2Source</h5>
                     <p>EEG source localization with Desikan-Killiany atlas regions</p>
                     <div class="mt-3">
-                        <a href="https://pypi.org/project/autoclean-eeg2source/" target="_blank" class="text-white me-3">
+                        <a href="https://pypi.org/project/autocleaneeg-eeg2source/" target="_blank" class="text-white me-3">
                             <i class="bi bi-box"></i> PyPI
                         </a>
-                        <a href="https://github.com/cincibrainlab/autoclean-eeg2source" target="_blank" class="text-white me-3">
+                        <a href="https://github.com/cincibrainlab/autocleaneeg-eeg2source" target="_blank" class="text-white me-3">
                             <i class="bi bi-github"></i> GitHub
                         </a>
                         <a href="https://mne.tools/stable/index.html" target="_blank" class="text-white">

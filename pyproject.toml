@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "autoclean-eeg2source"
+name = "autocleaneeg-eeg2source"
 version = "0.3.7"
 description = "EEG source localization with DK atlas regions"
 readme = "README.md"
@@ -43,7 +43,7 @@ dev = [
 ]
 
 [project.scripts]
-autoclean-eeg2source = "autoclean_eeg2source.cli:main"
+autocleaneeg-eeg2source = "autoclean_eeg2source.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
