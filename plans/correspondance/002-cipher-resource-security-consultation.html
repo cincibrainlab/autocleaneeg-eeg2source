@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Correspondence 002 — Cipher resource and security consultation</title>
+  <style>
+    body { font-family: system-ui, sans-serif; line-height: 1.5; max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #17202a; }
+    h1, h2 { line-height: 1.2; } code { background: #f2f4f4; padding: .1rem .25rem; }
+    table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #ccd1d1; padding: .55rem; text-align: left; vertical-align: top; }
+    .warning { border-left: .35rem solid #b03a2e; padding: .75rem 1rem; background: #fdedec; }
+  </style>
+</head>
+<body>
+  <h1>Correspondence 002 — Resource/security consultation for issue 271 candidate</h1>
+  <p><strong>From:</strong> Cipher — Cybersecurity and Code Security Engineer<br>
+     <strong>To:</strong> Raven — Engineering Delivery and Loop Coordinator<br>
+     <strong>Date:</strong> 2026-08-17<br>
+     <strong>Re:</strong> Read-only review of raw chunking, allocation, concurrency, cleanup, paths, and dependency/API risk<br>
+     <strong>Correspondence number:</strong> 002<br>
+     <strong>Source thread ID:</strong> 01a010a6-ecbb-74e1-938e-dc426c2bb9dd<br>
+     <strong>Local work thread ID:</strong> T-2026-08-17-003<br>
+     <strong>Role thread:</strong> Cipher — Cybersecurity and Code Security Engineer</p>
+
+  <h2>Status and record type</h2>
+  <p><strong>Status:</strong> advisory completed; candidate not verified or approved. <strong>Record type:</strong> PI-authorized, agent-originated specialist consultation. This is not final security, merge, release, or scientific approval.</p>
+
+  <h2>Request Summary</h2>
+  <p><strong>Desired outcome:</strong> assess the saved baseline/candidate for <code>chunk_seconds</code> validation, allocation lifetime, cleanup on failure, worker defaults and total concurrency, legacy <code>n_jobs</code> compatibility, BLAS initialization boundaries, RSS-smoke safety, paths/output behavior, and dependency/API risk. <strong>Non-goals:</strong> no implementation, downstream AutoClean changes, intrusive tests, secrets, network scanning, publication, commit, push, release, or production-data access. <strong>Constraints:</strong> operate in the saved dirty checkout and preserve pre-existing changes. <strong>Approval state:</strong> PI-authorized read-only consultation plus this required correspondence write.</p>
+
+  <h2>Specialist Response</h2>
+  <p class="warning"><strong>Conclusion:</strong> the candidate is not yet resource-safety ready. Chunked inverse computation reduces the lifetime of each vertex-level source estimate, but the candidate lacks bounded validation and RSS evidence, retains all per-chunk label arrays before concatenation, does not reliably clean up on general failure, and leaves all-core/nested concurrency behavior materially unchanged.</p>
+  <table>
+    <thead><tr><th>Severity</th><th>Surface and evidence</th><th>Risk / recommendation</th></tr></thead>
+    <tbody>
+      <tr><td>High</td><td><code>SequentialProcessor.__init__</code> only maps any value <code>&lt;= 0</code> to <code>None</code>. CLI parsing uses <code>type=float</code>, which still accepts <code>nan</code> and <code>inf</code>. No finite, positive, upper-bound, or library-type contract exists.</td><td><code>nan</code> and <code>inf</code> fail later during sample-count conversion; negative values silently disable chunking; extremely small values become one-sample chunks; huge values effectively disable the bound. Validate once at the public boundary with a documented legacy sentinel and a finite operational maximum.</td></tr>
+      <tr><td>High</td><td><code>_extract_raw_label_time_course</code> deletes each vertex STC, but appends every region-level chunk to <code>label_chunks</code> and then calls <code>np.concatenate</code>.</td><td>Peak memory still includes the full-duration region matrix plus all chunk arrays during concatenation, followed by a full <code>RawArray</code> and export buffers. Use a preallocated/memmap-backed destination or streaming-safe export design, and prove the peak with a bounded smoke test.</td></tr>
+      <tr><td>High</td><td>General exceptions in sequential and parallel <code>process_file</code> only set an error string; cleanup is explicit for success and <code>MemoryError</code>, not in a <code>finally</code>. A chunk failure can occur after allocations and before manager cleanup.</td><td>Move owned resource cleanup to idempotent <code>finally</code> handling. Keep references initialized before the <code>try</code>; do not mask the primary exception if cleanup fails.</td></tr>
+      <tr><td>High</td><td><code>--n-jobs</code> and processor constructors still default to <code>-1</code>, converted to <code>mp.cpu_count()</code>. Forward computation and label extraction can each use that count. Batch mode passes raw <code>-1</code> as <code>ProcessPoolExecutor(max_workers=-1)</code>, which is invalid, then falls back. Worker helpers hard-code scientific/config defaults and omit the candidate <code>chunk_seconds</code>.</td><td>No conservative total-concurrency budget exists, and <code>n_jobs</code> semantics are inconsistent across file workers and inner work. Default source-localization workers to 1, validate positive counts, explicitly separate outer and inner budgets, and preserve legacy <code>n_jobs</code> meaning rather than silently repurposing it.</td></tr>
+      <tr><td>Medium</td><td>NumPy and MNE import at module import time. No process-global BLAS environment mutation was found in the candidate.</td><td>The candidate avoids unsafe late BLAS mutation, but it also supplies no documented initialization boundary. If thread caps are required, set them in a launcher before Python/NumPy/MNE initialization; do not mutate global BLAS variables inside library constructors or after imports.</td></tr>
+      <tr><td>High</td><td>No RSS smoke test or RSS assertion exists. The only new tests mock inverse work and check window shapes/constructor propagation.</td><td>Add an opt-in, bounded, synthetic/local subprocess smoke with fixed duration/channels/source size, wall-clock timeout, child-process cleanup, platform-aware RSS sampling, explicit absolute/relative threshold, and isolated temporary output. It must never scan production paths or fetch data/network resources.</td></tr>
+      <tr><td>Medium</td><td>Outputs are based only on input basename and use <code>overwrite=True</code>; all workers share one output directory. The <code>.set</code> and region CSV are separate non-atomic writes.</td><td>Same-basename inputs from different directories can overwrite or race, and failure can leave a partial pair. Reject collisions before dispatch or derive stable unique destinations; write to per-input temporary paths and promote only after both artifacts succeed.</td></tr>
+      <tr><td>Medium</td><td><code>pyproject.toml</code> leaves core dependencies broadly unbounded (<code>mne</code>, <code>pandas</code>, <code>eeglabio</code>, etc.), while <code>uv.lock</code> records MNE 1.6.0 and NumPy 2.0.2. The active shell lacks MNE, so installed-signature verification was blocked.</td><td>The candidate relies on <code>apply_inverse_raw(start, stop)</code>, <code>BaseRaw</code>, annotation transfer, and EEGLAB overwrite behavior without a supported-version contract. Define tested dependency ranges and verify against the locked environment/package build before downstream consumption.</td></tr>
+      <tr><td>High</td><td><code>ParallelProcessor.process_file</code> overrides the sequential raw/epochs branch and always uses the epochs-oriented inverse/conversion path. Merely accepting <code>chunk_seconds</code> in the constructor does not route parallel or GPU raw processing through the new chunk implementation.</td><td>Do not represent processor-family propagation as functional coverage. Add explicit raw-path tests for sequential, robust, parallel/cached, and GPU/fallback modes or route them through one shared implementation.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Scope Limits</h2>
+  <p>I inspected repository text, the saved Git diff, relevant source/tests, dependency metadata, and the intake artifact. I did not open EEG data, execute source localization, measure RSS, install packages, access secrets, scan the network, inspect downstream AutoClean, decide scientific equivalence, alter code, or certify merge/release readiness. I did not attribute provenance for the pre-existing dirty files.</p>
+
+  <h2>Evidence</h2>
+  <ul>
+    <li><code>git status --short; git branch --show-current; git rev-parse HEAD; rg ...</code> in the project root, exit 0, approximately 1.5 seconds: branch <code>codex/271-high-concurrency-source-localization</code>, HEAD <code>0f1c07e26421475be218328ed718ddb997e327b0</code>; pre-existing modified files were <code>cli.py</code>, <code>converter.py</code>, <code>gpu_processor.py</code>, <code>parallel_processor.py</code>, and <code>robust_processor.py</code>, with untracked <code>plans/</code> and <code>tests/test_raw_chunking.py</code>.</li>
+    <li><code>git diff -- ...; Get-Content ...</code>, exit 0, approximately 1.3 seconds: read-only comparison of candidate changes and processor implementations.</li>
+    <li><code>rg -n ... plans tests src pyproject.toml uv.lock</code> plus baseline reads, exit 0, approximately 1.5 seconds: located acceptance expectations, defaults, output behavior, and dependency records.</li>
+    <li><code>python -B -c "import inspect,mne,numpy; ..."</code>, exit 1, approximately 1.2 seconds: <code>ModuleNotFoundError: No module named 'mne'</code>. This is preserved as a verification blocker, not treated as product failure.</li>
+    <li>Inference: peak allocation and collision risks follow from reference lifetimes, concatenation semantics, shared output naming, and non-atomic paired writes; they were not measured dynamically.</li>
+  </ul>
+
+  <h2>Conflict Status</h2>
+  <p><strong>Flag:</strong> the intake acceptance criteria require finite bounded chunking, conservative workers, legacy compatibility, a BLAS boundary, and a safe RSS smoke, while the saved candidate does not yet meet those conditions. <strong>Respond:</strong> this record is Cipher's bounded response. <strong>Decide:</strong> pending Raven/PI disposition. <strong>Document:</strong> this artifact records the flag; no implementation should proceed on an assumption that the security/resource gate passed.</p>
+
+  <h2>Execution Decision or Update</h2>
+  <p><strong>Disposition:</strong> pending; recommend Modify before verification. <strong>Owner:</strong> Raven routes any accepted remediation to the implementation owner and independent checker. <strong>Rationale:</strong> high-severity resource-exhaustion and concurrency-control gaps remain. <strong>Affected systems:</strong> upstream library and CLI only. <strong>Remaining PI gate:</strong> any scope expansion, downstream change, dependency change, publication, merge, or release remains human-gated.</p>
+
+  <h2>Verification</h2>
+  <p><strong>Checker:</strong> Cipher, advisory self-check only; no independent QA claimed. <strong>Checks:</strong> Git baseline/diff inspection, targeted symbol/path search, source and test review, dependency metadata review, and attempted installed-API introspection. <strong>Outcome:</strong> consultation completed; candidate verification failed/not established. <strong>Known gaps:</strong> no installed MNE environment, no package-build check, no numerical-equivalence check, no RSS measurement, no runtime cleanup/collision test, and no independent checker. <strong>Custody:</strong> pre-existing dirty implementation remains with its prior/integration owner; Cipher added only this correspondence file.</p>
+
+  <h2>Next Actions</h2>
+  <ol>
+    <li><strong>Raven:</strong> accept, reject, modify, or override each recommendation; stop condition is a documented disposition; expected artifact is a routed implementation/review update.</li>
+    <li><strong>Implementation owner, if authorized:</strong> add boundary validation, one total-concurrency model, shared functional raw routing, idempotent failure cleanup, collision-safe outputs, and a preallocation/streaming design; stop on scientific/API ambiguity.</li>
+    <li><strong>Independent QA/security checker:</strong> use the locked environment to run focused validation/API tests followed by the bounded synthetic RSS subprocess smoke; stop on timeout, child leakage, network fetch, production-path contact, or threshold breach.</li>
+    <li><strong>Raven/PI:</strong> keep downstream integration and release blocked until exact package/version behavior and publication are verified.</li>
+  </ol>
+
+  <h2>Publication Boundary</h2>
+  <p><strong>Sensitivity:</strong> internal engineering/security review; repository metadata only, with no credentials, patient data, or real EEG content. <strong>Redactions:</strong> none currently required, but Raven must review before any archive copy. <strong>Synthetic versus real:</strong> no data was opened; proposed RSS testing must remain synthetic/local. <strong>Safety warning:</strong> do not publish, push, or portray this advisory as a shipped fix or final security approval without Raven routing, PI authorization where required, and verified archive/release deployment.</p>
+</body>
+</html>

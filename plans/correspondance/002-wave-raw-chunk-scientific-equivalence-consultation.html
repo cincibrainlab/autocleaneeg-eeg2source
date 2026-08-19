@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Correspondence 002 — Raw chunk scientific equivalence consultation</title>
+  <style>
+    body { max-width: 980px; margin: 2rem auto; padding: 0 1rem; font: 16px/1.55 system-ui, sans-serif; color: #18212b; }
+    h1, h2 { line-height: 1.2; } code { background: #eef2f6; padding: .1rem .3rem; }
+    table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #cbd3dc; padding: .55rem; text-align: left; vertical-align: top; }
+    .warning { border-left: 4px solid #b66a00; padding: .7rem 1rem; background: #fff7e8; }
+  </style>
+</head>
+<body>
+  <h1>Correspondence 002: Raw chunk scientific equivalence consultation</h1>
+  <p><strong>Status:</strong> Advisory complete; decision pending Raven/PI. <strong>Record type:</strong> EEG-method specialist consultation.</p>
+  <table>
+    <tr><th>From</th><td>Wave — EEG Analysis Expert</td></tr>
+    <tr><th>To</th><td>Raven — Engineering Delivery and Loop Coordinator</td></tr>
+    <tr><th>Date</th><td>2026-08-17</td></tr>
+    <tr><th>Re</th><td>Scientific oracle for memory-bounded Raw inverse and label-time-course chunking</td></tr>
+    <tr><th>Correspondence</th><td>002</td></tr>
+    <tr><th>Source thread ID</th><td>01a010a6-ecbb-74e1-938e-dc426c2bb9dd</td></tr>
+    <tr><th>Local work thread ID</th><td>T-2026-08-17-003</td></tr>
+    <tr><th>Role thread</th><td>Wave standing project role (this task)</td></tr>
+  </table>
+
+  <h2>Request Summary</h2>
+  <p>This PI-authorized, Raven-routed consultation asks for a read-only methodological review of the published 0.3.7-style whole-Raw inverse/label flow and the dirty-checkout chunk candidate. The desired outcome is a justified equivalence oracle and explicit alignment, unchanged-setting, terminal-chunk, and Epochs non-regression criteria. Non-goals are implementation edits, threshold or inclusion decisions, downstream AutoClean changes, publication, and final scientific approval. The consultation is needed because the current mock characterization proves call boundaries and output shape but cannot establish scientific equivalence.</p>
+
+  <h2>Specialist Response</h2>
+  <h3>Reference oracle and numerical tolerance</h3>
+  <p>Use one deterministic, preloaded, representative Raw fixture after the same channel picking, montage, resampling, and average-reference projection steps. Build the forward solution, ad-hoc covariance, and inverse operator once. With the same object state, compute (A) one whole-recording <code>apply_inverse_raw</code> followed once by DK <code>extract_label_time_course</code>, and (B) sequential half-open chunks, each immediately reduced with the same labels/source space and concatenated along time. Compare the in-memory float64 label arrays before EEGLAB export, because file serialization can introduce a separate precision/metadata effect.</p>
+  <p>The proposed acceptance oracle is: identical shape, label order, finite/non-finite mask, and sample order; then <code>numpy.testing.assert_allclose(candidate, baseline, rtol=1e-10, atol=1e-15, equal_nan=True)</code>. Also report maximum absolute error and a scale-normalized maximum error <code>max_abs_error / max(max(abs(baseline)), 1e-15)</code>. This is intentionally strict: MNE minimum-norm application and mean label reduction are linear, column-local operations under fixed inputs/settings, so changing only temporal batching should produce roundoff-level differences, not scientifically material drift. The absolute floor accommodates near-zero source values; the relative term guards larger values. If the strict oracle fails, do not loosen it merely to pass: first test the same BLAS/backend, dtype, prepared-inverse behavior, channel order, and boundary indexing. Any broader tolerance is a PI/Raven scientific decision requiring empirical error evidence across representative recordings.</p>
+
+  <h3>Sample, time, and annotation alignment</h3>
+  <ul>
+    <li>Chunk intervals must partition processed Raw-relative samples exactly as <code>[start, stop)</code>: first start 0, adjacent <code>stop == next start</code>, final stop <code>raw.n_times</code>, with no overlap, omission, duplicated boundary sample, padding, or resampling inside the inverse loop.</li>
+    <li>The concatenated label array must have exactly <code>raw.n_times</code> columns. Column <code>j</code> must correspond to processed Raw-relative sample <code>j</code>; sampling frequency and sample period must equal the baseline.</li>
+    <li>Baseline output currently constructs a new Raw with <code>first_samp=0</code>. Scientific equivalence therefore requires preserving that baseline convention unless the PI explicitly approves a contract change. Input <code>first_samp</code>/<code>first_time</code> should be recorded in the oracle even though the legacy output discards it.</li>
+    <li>Annotations require an explicit contract. Copying the input annotation object into a new <code>first_samp=0</code> Raw is not automatically proven aligned, especially when input <code>first_samp</code>, <code>first_time</code>, or <code>orig_time</code> is nonzero. Verify each annotation's onset, duration, description, and time-base interpretation against the processed samples. If strict 0.3.7 output equivalence is the goal, note that the legacy converter did not attach annotations; adding them is a behavior extension and must be separately approved and tested rather than counted as numerical equivalence.</li>
+  </ul>
+
+  <h3>Scientific settings that must remain invariant</h3>
+  <p>Hold constant the processed channel names/order/types/bads, montage and digitization, sampling frequency, average-reference projection state, forward solution and its source space/orientation, ad-hoc noise covariance, inverse operator instance, <code>lambda2</code>, inverse <code>method="MNE"</code>, <code>pick_ori="normal"</code>, MNE default parameters not intentionally version-locked, DK label identities and order, <code>fsaverage_src</code>, and label reduction <code>mode="mean"</code>. No per-chunk covariance, inverse reconstruction, filtering, resampling, referencing, baseline correction, edge padding, rejection, or annotation-driven sample removal belongs in the equivalence change. Record MNE, NumPy, and backend versions because the project currently leaves MNE unpinned.</p>
+
+  <h3>Final partial chunk semantics</h3>
+  <p>For positive chunk size <code>C</code> samples and <code>N &gt; 0</code>, the final interval is <code>[kC, N)</code> with length <code>N-kC</code> in <code>1..C</code>. It is processed once with the same inverse and reduction settings and concatenated without padding, truncation, overlap, weighting, or special normalization. When <code>N</code> is divisible by <code>C</code>, do not create an empty terminal chunk. A recording shorter than <code>C</code> is one complete chunk and must equal the whole-Raw oracle. Empty Raw behavior should be explicit and tested at the implementation boundary rather than inferred scientifically.</p>
+
+  <h3>Epochs non-regression criteria</h3>
+  <p>The Raw option must not alter the Epochs branch. For the same Epochs fixture and environment, compare candidate with the clean baseline for: exactly one <code>apply_inverse_epochs</code> call; unchanged inverse arguments (<code>lambda2</code>, <code>method="MNE"</code>, <code>pick_ori="normal"</code>); identical number/order of epochs, labels, and time samples; label arrays within the same strict tolerance; unchanged <code>sfreq</code>, <code>tmin</code>, channel/label order and locations, <code>event_id</code>, and generated event array; and the same exported filename/type. Exercise at least one normal event mapping and the existing fallback event path. Varying <code>chunk_seconds</code> must have no effect on any Epochs output or inverse call.</p>
+
+  <h2>Material Alternatives</h2>
+  <p>A looser <code>rtol=1e-7</code> oracle would reduce backend-specific test fragility but could conceal an unintended setting or alignment change; it is not recommended without empirical justification. Bitwise equality is attractive but unnecessarily couples acceptance to backend/library implementation. Comparing exported <code>.set</code> files alone is also insufficient because serialization precision and event/annotation representation confound inverse equivalence.</p>
+
+  <h2>Scope Limits</h2>
+  <p>I inspected the saved checkout's baseline-at-HEAD converter, dirty candidate diff, processor propagation, CLI additions, mock chunk tests, project dependency declaration, and existing intake correspondence. I did not install MNE, fetch external documentation, execute a real inverse, inspect downstream AutoClean, edit implementation code, choose a final tolerance for the PI, approve annotation behavior, or verify EEGLAB round-trip fidelity. The active Python environment lacks MNE, so scientific runtime equivalence remains unexecuted.</p>
+
+  <h2>Evidence</h2>
+  <ul>
+    <li><code>git status --short</code>: pre-existing modifications in <code>cli.py</code>, <code>converter.py</code>, <code>gpu_processor.py</code>, <code>parallel_processor.py</code>, and <code>robust_processor.py</code>; untracked <code>plans/</code> and <code>tests/test_raw_chunking.py</code>.</li>
+    <li><code>git diff -- src/autoclean_eeg2source/core/converter.py tests/test_raw_chunking.py</code>: candidate partitions sample bounds, passes <code>start</code>/<code>stop</code>, immediately reduces each STC, and concatenates label chunks; it also newly propagates annotations to a new Raw with <code>first_samp=0</code>.</li>
+    <li><code>git show HEAD:src/autoclean_eeg2source/core/converter.py</code>: clean baseline performs one whole-Raw <code>apply_inverse_raw</code>, then one <code>mode='mean'</code> label extraction, and creates output Raw with <code>first_samp=0</code> without attaching annotations.</li>
+    <li><code>tests/test_raw_chunking.py</code>: current tests use mocks and establish five half-open calls and a 25-column result, but contain no real numerical, timing/annotation, terminal-nondivisible-value, or Epochs oracle.</li>
+    <li><code>python -B -c "import mne..."</code>: failed with <code>ModuleNotFoundError: No module named 'mne'</code>; no runtime scientific comparison was claimed.</li>
+    <li><code>pyproject.toml</code>: package version 0.3.7 and unbounded <code>mne</code> dependency; exact MNE version must be captured by the eventual oracle.</li>
+  </ul>
+
+  <h2>Conflict Status</h2>
+  <p><strong>Flag:</strong> candidate annotation copying is an unproven behavior extension relative to baseline, and the requested exact annotation contract is not yet authorized. <strong>Respond:</strong> Wave recommends separating annotation-contract acceptance from numerical inverse equivalence and testing nonzero time origins. <strong>Decide:</strong> pending Raven/PI. <strong>Document:</strong> recorded here; no implementation action should rely on annotation equivalence until decided.</p>
+
+  <h2>Execution Decision or Update</h2>
+  <p><strong>Disposition:</strong> pending. Wave supplies an advisory oracle only. Raven owns routing; the PI retains final scientific authority. No code, downstream system, dependency, commit, branch, release, or public archive was changed by this consultation.</p>
+
+  <h2>Verification</h2>
+  <p><strong>Checker:</strong> Wave (methodological self-check only; not independent implementation QA). <strong>Checks:</strong> baseline/candidate static trace, dirty-state inventory, test-content inspection, dependency inspection, and attempted MNE import. <strong>Outcome:</strong> advisory criteria complete; empirical numerical verification blocked by absent MNE and absent representative inverse fixture. <strong>Known gaps:</strong> no real Raw/Epochs computation, no EEGLAB round trip, no independent checker. Custody passes to Raven for decision and QA routing.</p>
+
+  <h2>Next Actions</h2>
+  <ol>
+    <li><strong>Raven/PI:</strong> decide whether annotations are strict-baseline (absent) or an approved preserved-metadata extension; stop if the time-base contract remains ambiguous; expected artifact is a documented decision.</li>
+    <li><strong>Assigned implementer:</strong> in the approved environment, capture versions and add a real deterministic baseline-versus-chunk oracle plus nonzero-time-origin annotation characterization; stop on strict tolerance failure rather than relaxing it; expected artifact is test evidence.</li>
+    <li><strong>Independent QA:</strong> run the Raw oracle across divisible, nondivisible, one-sample terminal, and shorter-than-chunk cases, then run Epochs invariance checks; expected artifact is a separate pass/fail record.</li>
+  </ol>
+
+  <h2>Publication Boundary</h2>
+  <div class="warning"><strong>Publication sensitivity:</strong> Internal-safe, not approved or published. No patient data, credentials, or protected results are included. Repository paths, branch state, and implementation details are real rather than synthetic. Raven must review completeness and the annotation conflict before any archive integration. This advisory must not be represented as final scientific approval or empirical validation.</div>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>006 — Issue 271 Cricket independent QA</title></head>
+<body>
+  <h1>Correspondence 006: Bounded sequential Raw chunking independent QA</h1>
+  <dl>
+    <dt>From</dt><dd>Cricket — Junior Implementation QA Engineer</dd>
+    <dt>To</dt><dd>Raven — Engineering Delivery and Loop Coordinator</dd>
+    <dt>Date</dt><dd>2026-08-17 (America/New_York)</dd>
+    <dt>Re</dt><dd>Issue #271 frozen Raw chunking candidate acceptance verification</dd>
+    <dt>Correspondence number</dt><dd>006</dd>
+    <dt>Source thread ID</dt><dd>01a010a6-ecbb-74e1-938e-dc426c2bb9dd</dd>
+    <dt>Local work thread ID</dt><dd>T-2026-08-17-003</dd>
+    <dt>Role thread</dt><dd>Cricket standing project role (current task)</dd>
+    <dt>Status</dt><dd>Independent QA completed; focused tests pass; acceptance blocked by one reproducible annotation defect and two required evidence gaps</dd>
+    <dt>Record type</dt><dd>PI-authorized read-only independent QA pass</dd>
+  </dl>
+
+  <h2>Request Summary</h2>
+  <p>Raven routed Cricket to independently inspect Echo's frozen candidate and verify the 16 Raw tests, five robust tests, Epochs non-regression, invalid controls, capability marker, CLI/default consistency, allocation and failure cleanup, and sample/metadata/annotation semantics. A safe synthetic peak-RSS attempt and bounded package or CLI smoke were requested where evidence could be meaningful. The assignment explicitly prohibited source, test, lockfile, or other-agent artifact edits; commit, push, release, and publication were also prohibited. The <code>uv.lock</code> diff is outside feature custody.</p>
+  <p><strong>Desired outcome:</strong> a maker-independent pass/fail record against the exact saved checkout. <strong>Non-goals:</strong> defect repair, scientific interpretation, real/production EEG access, package publication, downstream integration, or final acceptance authority. <strong>Approval state:</strong> independent read-only verification and this new correspondence artifact were PI-authorized.</p>
+
+  <h2>Execution Update</h2>
+  <p>The checkout remained on <code>codex/271-high-concurrency-source-localization</code> at HEAD <code>0f1c07e26421475be218328ed718ddb997e327b0</code>. Cricket did not modify the frozen source/tests or <code>uv.lock</code>. The first Python attempt failed before interpreter startup because the managed uv trampoline returned Windows permission error 5. The single narrow, approved project-local runtime recovery then worked.</p>
+  <p>The 16 Raw cases and five established robust cases pass independently. They cover half-open/final chunk bounds, concatenation order and length, the mocked whole-Raw numerical oracle at <code>rtol=1e-10</code>/<code>atol=1e-15</code>, immediate STC reduction/release, injected-reduction failure cleanup, seven parametrized invalid chunk controls, <code>orig_time=None</code> sample/annotation behavior, the exported capability marker, Epochs routing separation, and conservative worker defaults.</p>
+  <p>A separate invalid-control probe also confirmed rejection of booleans and strings for <code>chunk_seconds</code>, plus booleans, non-integers, strings, null, zero, and negatives for <code>n_jobs</code>. Import/signature and CLI-help smoke confirmed <code>sequential-raw-chunking-v1</code>, library <code>chunk_seconds=30.0</code>, parallel/GPU <code>n_jobs=1</code>, and the process CLI's documented chunk and worker surfaces.</p>
+
+  <h2>Defect Finding</h2>
+  <p><strong>QA-271-1 — non-null annotation <code>orig_time</code> is not supported by the new Raw output path (acceptance blocker).</strong> At <code>src/autoclean_eeg2source/core/converter.py:469</code> the output <code>RawArray</code> is constructed from new <code>Info</code> without a measurement date; line 471 then attaches the input annotations. A no-write synthetic probe with a timezone-aware non-null <code>orig_time</code> reproducibly raises <code>RuntimeError: Ambiguous operation. Setting an Annotation object with known orig_time to a raw object which has meas_date set to None is ambiguous.</code> This is a real implementation-correctness failure at the requested annotation/metadata boundary, not merely missing coverage. The existing passing annotation test only exercises <code>orig_time=None</code>. Cricket made no fix.</p>
+
+  <h2>Evidence</h2>
+  <ul>
+    <li><code>git status --short; git branch --show-current; git rev-parse HEAD; rg ...</code>, repository root, about 1.5 seconds, exit 2 only because optional <code>github/</code> and a PowerShell-incompatible wildcard path were absent; the useful output confirmed the branch, HEAD, dirty feature files, test/correspondence records, and acceptance text.</li>
+    <li>Initial <code>.venv\Scripts\python.exe -B -m pytest tests\test_raw_chunking.py -q --maxfail=1 --no-cov -p no:cacheprovider</code>, repository root, under 1 second, exit 1 before Python: <code>uv trampoline failed to spawn Python child process</code>, permission denied (OS error 5).</li>
+    <li>The same Raw command under the narrowly approved project-local runtime, 5.19 seconds wall time, exit 0: 16 collected, 16 passed in 1.71 seconds.</li>
+    <li><code>.venv\Scripts\python.exe -B -m pytest tests\test_robust_processor.py -q --maxfail=1 --no-cov -p no:cacheprovider</code>, 4.38 seconds wall time, exit 0: five collected, five passed in 0.79 seconds.</li>
+    <li>Read-only import/signature probe, 3.63 seconds, exit 0: capability <code>sequential-raw-chunking-v1</code>; all processor families expose <code>chunk_seconds=30.0</code>; parallel/cached/GPU expose <code>n_jobs=1</code>.</li>
+    <li><code>.venv\Scripts\python.exe -B -m autoclean_eeg2source.cli process --help</code>, 3.54 seconds, exit 0: <code>--chunk-seconds</code> is exposed and <code>--n-jobs</code> documents default 1.</li>
+    <li><code>git diff --check -- src/autoclean_eeg2source tests/test_raw_chunking.py</code>: no whitespace errors; Windows line-ending warnings only. Search for <code>OPENBLAS</code>, <code>MKL_NUM_THREADS</code>, <code>OMP_NUM_THREADS</code>, <code>os.environ</code>, and <code>threadpool_limits</code> found no source/test mutation.</li>
+    <li>Independent invalid-control probe, 4.04 seconds, exit 0: all tested invalid <code>chunk_seconds</code> and <code>n_jobs</code> values were rejected with <code>TypeError</code> or <code>ValueError</code>; no value was silently accepted.</li>
+    <li>No-write non-null-<code>orig_time</code> probe, 4.48 seconds, process exit 0 with captured product outcome <strong>FAIL</strong>: the exact MNE ambiguity <code>RuntimeError</code> above. Filesystem/export functions were mocked; no output path was created.</li>
+    <li>Static inspection confirms each vertex STC is reduced and released in <code>finally</code> before the next chunk. Compact label chunks remain retained until final <code>numpy.concatenate</code>, so the proof is one-STC-live rather than constant total memory.</li>
+  </ul>
+
+  <h2>Scope Limits and Evidence Gaps</h2>
+  <p>No real inverse solution, fsaverage download, real EEG, production path, EEGLAB round trip, full suite, senior diff review, or downstream integration was run. The numerical oracle is deterministic and mocked; it proves call settings, ordering, and concatenation but is not a scientific result. Epochs non-regression was verified at routing/call level only, not by baseline-versus-candidate event/metadata array comparison.</p>
+  <p>A peak-RSS number was not reported because the available safe synthetic path mocks the dominant inverse allocation and would create a misleading memory claim; a meaningful process-RSS check requires a bounded local real-inverse fixture and an explicit measurable threshold. A package build/install smoke was not run because it would write build/install artifacts, while this assignment permits no new files except Cricket's correspondence. The CLI import/help smoke was the safe bounded substitute. Non-null annotation <code>orig_time</code> was tested and failed as documented.</p>
+
+  <h2>Conflict Status</h2>
+  <p><strong>Flag:</strong> maker correspondence declared non-null <code>orig_time</code> as a gap, while the required acceptance matrix includes annotation/metadata semantics; independent QA proves it currently fails. <strong>Respond:</strong> Cricket records the exact no-write reproduction and does not repair or reinterpret the requirement. <strong>Decide:</strong> pending Raven/PI disposition and maker routing. <strong>Document:</strong> this correspondence is the canonical QA record. No other conflict was opened.</p>
+
+  <h2>Execution Decision or Update</h2>
+  <p><strong>Disposition:</strong> focused implementation checks pass, but independent acceptance remains blocked. <strong>Owner:</strong> Raven owns PI-facing disposition; any code/test response must return to an authorized maker. <strong>Rationale:</strong> 21 focused tests and interface probes pass, but QA-271-1 is reproducible and the required meaningful peak-RSS and package build/install proofs remain absent. <strong>Remaining gate:</strong> Raven/PI decides whether non-null <code>orig_time</code> is required for this release boundary and whether to authorize remediation plus a writable RSS/build verification phase.</p>
+
+  <h2>Verification and Custody</h2>
+  <p><strong>Checker:</strong> Cricket, independently from maker Echo. <strong>Result:</strong> <strong>blocked/fail for overall acceptance</strong>; 16 Raw and five robust tests pass; Epochs routing, invalid controls, capability/API/CLI defaults, and STC lifetime checks pass; non-null annotation timebase fails; peak-RSS and package build/install remain unverified. <strong>Known gaps:</strong> listed above. <strong>Custody:</strong> the source/tests remain frozen under Raven/Echo custody; Cricket owns only this record and made no implementation change.</p>
+
+  <h2>Next Actions</h2>
+  <ol>
+    <li><strong>Raven:</strong> route QA-271-1 to the authorized maker or obtain an explicit PI scope decision; stop condition is a documented disposition.</li>
+    <li><strong>Authorized maker, if routed:</strong> address the measurement-date/annotation-timebase contract and add a non-null <code>orig_time</code> regression without changing scientific settings; expected artifact is a new maker update.</li>
+    <li><strong>Independent QA after any change:</strong> rerun the exact focused matrix and non-null-timebase probe; if separately authorized, run a writable package build/install smoke and a thresholded process peak-RSS test using a bounded local real-inverse fixture.</li>
+    <li><strong>Raven/PI:</strong> retain commit, push, release, publication, and downstream consumption gates. Cricket does not grant final acceptance.</li>
+  </ol>
+
+  <h2>Publication Boundary</h2>
+  <p><strong>Sensitivity:</strong> internal engineering QA record; safe repository metadata and synthetic observations only. <strong>Redactions:</strong> none required. <strong>Synthetic versus real:</strong> all runtime probes used synthetic/mocked data; no patient, production, or real EEG data was accessed. <strong>Safety warning:</strong> withhold from public archive until Raven reviews the defect and publication boundary; do not publish, push, release, or represent the candidate as accepted or shipped.</p>
+</body>
+</html>

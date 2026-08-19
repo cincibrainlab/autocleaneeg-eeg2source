@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>004 — Python ABI blocker</title></head>
+<body>
+  <h1>Correspondence 004: Characterization-first continuation stopped by locked NumPy/pandas ABI mismatch</h1>
+  <dl>
+    <dt>From</dt><dd>Echo — Software Engineer</dd>
+    <dt>To</dt><dd>Raven — Engineering Delivery and Loop Coordinator</dd>
+    <dt>Date</dt><dd>2026-08-17 (America/New_York)</dd>
+    <dt>Re</dt><dd>Issue #271 resumed test-first implementation</dd>
+    <dt>Correspondence number</dt><dd>004</dd>
+    <dt>Source thread ID</dt><dd>01a010a6-ecbb-74e1-938e-dc426c2bb9dd</dd>
+    <dt>Local work thread ID</dt><dd>T-2026-08-17-003</dd>
+    <dt>Role thread</dt><dd>Echo standing project role (current task)</dd>
+    <dt>Status</dt><dd>Blocked before edit</dd>
+    <dt>Record type</dt><dd>PI-authorized execution update</dd>
+  </dl>
+
+  <h2>Request Summary</h2>
+  <p>Raven reported the environment blocker resolved by <code>uv sync --extra dev --python 3.11</code> and directed Echo to resume characterization-first implementation using exact focused pytest nodes with 60–120 second budgets. Echo was assigned sole ownership of the candidate code files for this continuation; Raven remains integration owner. Other agents' correspondence, the authoritative sdist, provenance workspace, and all release/publication boundaries were to be preserved.</p>
+
+  <h2>Execution Update</h2>
+  <p>Before editing, Echo confirmed ownership as follows: the five existing source candidates and <code>tests/test_raw_chunking.py</code> are assigned to Echo as sole code editor for this continuation. The sync-generated <code>uv.lock</code> diff, correspondence files, authoritative sdist, and provenance workspace are not Echo-owned implementation surfaces and were left unchanged.</p>
+  <p>The first direct interpreter health command failed because <code>.venv/Scripts/python.exe</code> is a uv trampoline and the sandbox denied spawning its managed Python child. Echo used the single permitted focused recovery by rerunning the interpreter probe with narrow filesystem escalation. That recovery launched Python, but importing the locked dependencies failed before pytest collection: pandas 2.0.3 is binary-incompatible with NumPy 2.0.2 in this environment.</p>
+  <p>The exact exception is <code>ValueError: numpy.dtype size changed, may indicate binary incompatibility. Expected 96 from C header, got 88 from PyObject</code>, raised while importing <code>pandas._libs.interval</code>. The package's converter imports pandas at module load, so no characterization node can collect reliably. Per Raven's explicit instruction to stop on a second same-class environment failure, Echo stopped before changing tests or implementation.</p>
+
+  <h2>Exact Commands and Results</h2>
+  <ul>
+    <li><code>.\.venv\Scripts\python.exe -B -c "import sys,mne,numpy,pandas,pytest; ..."</code> in the project root — sandbox execution completed in approximately 3.3 seconds but the uv trampoline reported <code>permission denied (os error 5)</code> before the child interpreter launched.</li>
+    <li>The exact interpreter probe was rerun with narrow escalation — Python launched; after approximately 13.1 seconds it failed importing pandas with the NumPy ABI-size exception above.</li>
+    <li><code>git status --short --branch</code> before edit showed the five pre-existing modified source files, sync-modified <code>uv.lock</code>, untracked <code>plans/</code>, and untracked <code>tests/test_raw_chunking.py</code>.</li>
+    <li><code>git diff --stat</code> showed the pre-existing 174-insertion/72-deletion source candidate plus a large line-ending-shaped <code>uv.lock</code> diff introduced before this continuation.</li>
+  </ul>
+
+  <h2>Scope Limits</h2>
+  <p>No test or source file was edited. No pytest node collected or ran. No dependency was installed, downgraded, upgraded, downloaded, or re-locked. Echo did not modify <code>uv.lock</code>, correspondence from other agents, the authoritative sdist, provenance evidence, downstream AutoClean, Git history, remotes, releases, or publications.</p>
+
+  <h2>Evidence and Inference</h2>
+  <p><strong>Observed:</strong> Python can launch only after narrow escalation; pandas import fails against the installed NumPy ABI. <strong>Inference:</strong> the current resolved lock/environment is not runnable for this package's import graph. The likely repair is a compatible pandas/NumPy pair encoded through the project dependency constraints and lock, but Echo did not choose or apply that dependency change because it is outside the current candidate ownership and would require its own verified environment action.</p>
+
+  <h2>Conflict Status</h2>
+  <p><strong>Flag:</strong> Raven reported the environment resolved, but the exact provisioned environment cannot import its locked scientific stack. <strong>Respond:</strong> Echo ran the direct probe and one narrow escalated recovery. <strong>Decide:</strong> Raven/PI or the assigned environment owner must approve and produce a compatible lock/environment. <strong>Document:</strong> this record. No implementation proceeds while the conflict is unresolved.</p>
+
+  <h2>Execution Decision or Update</h2>
+  <p><strong>Disposition:</strong> pause before edit. <strong>Owner:</strong> Raven for environment/integration routing; Echo remains sole candidate code editor once the environment passes. <strong>Rationale:</strong> characterization-first requires a package that can import and collect. <strong>Remaining gate:</strong> demonstrate a successful direct probe importing MNE, NumPy, pandas, and pytest from the project venv, then run the exact first characterization node.</p>
+
+  <h2>Verification</h2>
+  <p><strong>Checker:</strong> Echo performed environment readiness checks only; no independent QA was contacted. <strong>Outcome:</strong> failed before test collection. <strong>Known gaps:</strong> all characterization, oracle, implementation, equivalence, cleanup, concurrency, validation, metadata, RSS, API, build/install, QA, and review checks remain outstanding. <strong>Custody:</strong> the candidate remains byte-for-byte as received in this continuation and is safe for a correctly provisioned owner to continue.</p>
+
+  <h2>Next Actions</h2>
+  <ol>
+    <li><strong>Raven/environment owner:</strong> repair the locked NumPy/pandas compatibility without losing the authoritative artifact or candidate; provide the exact sync command and successful import probe.</li>
+    <li><strong>Echo after gate passes:</strong> add and run the failing baseline allocation characterization and locked whole-Raw oracle before implementation repair.</li>
+    <li><strong>Raven:</strong> preserve independent QA/review routing after maker completion.</li>
+  </ol>
+
+  <h2>Publication Boundary</h2>
+  <p><strong>Sensitivity:</strong> internal environment and engineering record. <strong>Redactions:</strong> none required. <strong>Synthetic versus real:</strong> no EEG data was accessed. <strong>Safety warning:</strong> do not publish this record or represent the candidate/environment as verified, released, or shipped.</p>
+</body>
+</html>

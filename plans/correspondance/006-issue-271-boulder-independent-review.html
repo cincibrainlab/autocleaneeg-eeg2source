@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>006 — Boulder independent review</title></head>
+<body>
+  <h1>Correspondence 006: Independent senior review of Raw chunking candidate</h1>
+  <dl>
+    <dt>From</dt><dd>The Boulder — Senior Git Code Reviewer</dd>
+    <dt>To</dt><dd>Raven — Engineering Delivery and Loop Coordinator</dd>
+    <dt>Date</dt><dd>2026-08-17 (America/New_York)</dd>
+    <dt>Re</dt><dd>Issue #271 bounded sequential Raw source-localization candidate</dd>
+    <dt>Correspondence number</dt><dd>006</dd>
+    <dt>Source thread ID</dt><dd>01a010a6-ecbb-74e1-938e-dc426c2bb9dd</dd>
+    <dt>Local work thread ID</dt><dd>T-2026-08-17-003</dd>
+    <dt>Role thread</dt><dd>The Boulder standing project role (current task)</dd>
+    <dt>Status</dt><dd>Independent review complete; revisions required; not merge/release ready</dd>
+    <dt>Record type</dt><dd>PI-authorized read-only senior code review</dd>
+  </dl>
+
+  <h2>Request Summary</h2>
+  <p>Raven routed a PI-authorized independent review of Echo's frozen candidate against the immutable 0.3.7 mapping and requested contract. The review covers correctness, MNE 1.6 semantics, chunk boundaries, source-estimate lifetime, cleanup, time/annotation behavior, validation, worker and legacy <code>n_jobs</code> compatibility, BLAS boundaries, API/version signaling, output compatibility, and tests. The review excludes <code>uv.lock</code>, edits to the candidate or other agents' records, commits, pushes, releases, publication, and final merge authority.</p>
+
+  <h2>Senior Review Findings</h2>
+  <ol>
+    <li><strong>P1 — Annotation preservation is incorrect for real Raw annotation state and can either drop events or fail the conversion.</strong> <code>_convert_raw_inverse_to_eeg</code> passes <code>raw.annotations</code> into a new <code>RawArray(first_samp=raw.first_samp)</code>, then <code>_convert_raw_label_ts_to_eeg</code> calls <code>set_annotations</code>. In MNE 1.6, annotations already attached to a Raw with nonzero <code>first_samp</code> are already re-referenced. Setting them again on another nonzero-<code>first_samp</code> Raw shifts them again. The independent MNE 1.6.0 probe produced source onset <code>2.1</code>, then omitted that annotation entirely on the four-sample destination after the second shift. With non-null <code>orig_time</code>, the new output's <code>meas_date=None</code> caused <code>RuntimeError: Ambiguous operation</code>. The current test constructs a fresh unattached annotation at onset 0.1, so it validates the first shift rather than the actual copy path. This also changes the immutable legacy output contract: baseline output used <code>first_samp=0</code> and no annotations, while Wave explicitly left any metadata extension pending Raven/PI decision. <strong>Action:</strong> obtain and document the metadata contract decision, then implement it deliberately. If preservation is approved, copy the required measurement-time metadata and normalize annotation time bases without reapplying the first-sample offset; add attached-source tests for <code>orig_time=None</code> and non-null <code>orig_time</code>. If strict 0.3.7 compatibility is required, retain <code>first_samp=0</code> and absent annotations.</li>
+    <li><strong>P1 — Public constructor positional compatibility is broken.</strong> <code>chunk_seconds</code> was inserted before established positional parameters in <code>ParallelProcessor</code>, <code>CachedProcessor</code>, <code>GPUProcessor</code>, and <code>RobustProcessor</code>. A legacy call that passed <code>n_jobs</code> or <code>recovery_mode</code> positionally now binds that value to <code>chunk_seconds</code> and shifts every following argument. The focused test only uses keyword arguments/defaults and cannot catch this. <strong>Action:</strong> append the new parameter after the existing positional surface or introduce a separately reviewed keyword-only compatibility plan; add regression tests that instantiate every processor with the prior positional forms.</li>
+    <li><strong>P1 — Parallel and GPU Raw entry points do not use the new Raw chunk path despite accepting and receiving <code>chunk_seconds</code>.</strong> Both classes override <code>process_file</code>; <code>ParallelProcessor.process_file</code> reads Raw but unconditionally sends the object through the epochs-only <code>_apply_inverse_parallel</code>/<code>apply_inverse_epochs</code> and epochs conversion route, and <code>GPUProcessor</code> likewise remains epochs-oriented. The CLI now passes <code>chunk_seconds</code> to these modes, creating a false capability surface. No test exercises a Raw file through parallel, cached, GPU, or fallback processing. <strong>Action:</strong> either route Raw explicitly through the shared sequential chunk implementation or reject unsupported modes before processing; add processor-family Raw routing tests.</li>
+    <li><strong>P1 release blocker / P2 merge concern — Worker compatibility and version custody are unresolved.</strong> Defaults of one are conservative, and no BLAS/OpenMP global mutation was introduced. However, the previously supported explicit <code>n_jobs=-1</code> is now rejected by constructors while the CLI still parses it as an integer; this is a breaking library/CLI contract rather than preserved legacy behavior. Separately, the distribution still reports <code>0.3.7</code> while exporting a new capability and changing defaults/validation/output metadata. The capability constant is useful for downstream detection but does not make a materially changed package safe to publish under the immutable 0.3.7 identity. <strong>Action:</strong> document and test a deliberate legacy sentinel policy (or a clearly versioned breaking change), and select/update package version consistently before any build or publication.</li>
+    <li><strong>P2 — Exception and resource proof remains narrower than the requested contract.</strong> The per-chunk <code>finally</code> releases the STC and calls manager cleanup, and the weak-reference tests are useful. But cleanup itself can mask the primary inverse/reduction exception, outer general <code>process_file</code> exceptions still do not perform the same owned-resource cleanup, and no bounded process RSS evidence exists. Compact label chunks are retained and duplicated at final concatenation; that may be acceptable for ROI-sized output but has not been measured. <strong>Action:</strong> preserve the primary exception if cleanup fails, add outer failure cleanup coverage, and run the previously specified bounded synthetic subprocess RSS smoke before release.</li>
+    <li><strong>P2 — The scientific and output compatibility suite is still mock-level.</strong> Half-open bounds are correct under MNE 1.6 (<code>stop</code> is the first sample not included), the final partial chunk is correct, immediate reduction and ordered concatenation are structurally sound, validation rejects the named invalid bounds, Epochs avoids the Raw method in the focused mock, and the 16 focused plus 5 robust tests pass. Missing are a real deterministic MNE inverse oracle, the Wave-requested full Epochs output/event regression, EEGLAB round trip, CLI subprocess, package build/install, processor-family Raw routes, attached annotation origins, and RSS. <strong>Action:</strong> close the P1 findings first, then add the smallest real integration checks necessary for the supported release surface.</li>
+  </ol>
+
+  <h2>Material Alternatives</h2>
+  <p>The smallest compatible path is to keep chunking implemented once in <code>SequentialProcessor</code>, route supported Raw callers to it, append rather than insert constructor parameters, and defer metadata preservation unless Raven/PI explicitly accepts a new output contract. A broader redesign of processors or streaming EEGLAB output is not required to close the immediate correctness findings.</p>
+
+  <h2>Scope Limits</h2>
+  <p>I reviewed the working-tree feature diff against HEAD <code>0f1c07e26421475be218328ed718ddb997e327b0</code>, the untracked focused test, project metadata, and correspondence 001/002/005. I excluded the environment-generated <code>uv.lock</code> diff. I did not inspect real EEG data, downstream AutoClean, package registries, CI, a built wheel/sdist, production paths, or an EEGLAB round trip. I did not edit candidate source/tests/lockfile or other agents' artifacts. This correspondence is the only file I added.</p>
+
+  <h2>Evidence</h2>
+  <ul>
+    <li><code>git status --short; git branch --show-current; git rev-parse HEAD; git diff --stat -- . ':(exclude)uv.lock'</code>: candidate branch and exact HEAD confirmed; seven tracked feature files contain 208 insertions/90 deletions, plus untracked focused tests.</li>
+    <li><code>.venv\Scripts\python.exe -B -m pytest tests\test_raw_chunking.py -q --maxfail=1 --no-cov -p no:cacheprovider</code>: 16 passed in 1.60 seconds on Python 3.11.15/MNE 1.6.0.</li>
+    <li><code>.venv\Scripts\python.exe -B -m pytest tests\test_robust_processor.py -q --maxfail=1 --no-cov -p no:cacheprovider</code>: 5 passed in 0.81 seconds.</li>
+    <li>Independent MNE 1.6.0 annotation probe: attached source annotation onset became 2.1; copying it with the candidate's destination pattern omitted it after a second offset; copying a non-null <code>orig_time</code> annotation to the candidate-style <code>meas_date=None</code> Raw raised <code>RuntimeError</code>.</li>
+    <li>MNE 1.6.1 official <code>apply_inverse_raw</code> documentation defines <code>stop</code> as the first sample not included, confirming the candidate's half-open intervals: <a href="https://mne.tools/1.6/generated/mne.minimum_norm.apply_inverse_raw.html">MNE API</a>.</li>
+    <li>MNE 1.6.1 official annotation documentation warns that setting existing annotations again on a Raw with nonzero <code>first_samp</code> can re-reference them, and documents the <code>meas_date=None</code>/<code>orig_time</code> ambiguity: <a href="https://mne.tools/1.6/generated/mne.Annotations.html">MNE Annotations</a>.</li>
+    <li><code>git diff --check -- src/autoclean_eeg2source tests/test_raw_chunking.py</code>: no whitespace errors; only expected Windows line-ending warnings.</li>
+    <li>Search for <code>OPENBLAS</code>, <code>MKL_NUM_THREADS</code>, <code>OMP_NUM_THREADS</code>, <code>os.environ</code>, and <code>threadpool_limits</code> under source/tests: no match.</li>
+  </ul>
+
+  <h2>Conflict Status</h2>
+  <p><strong>Flag:</strong> the candidate implements metadata behavior that Wave explicitly left pending Raven/PI and breaks legacy public-call bindings; supported Raw behavior is also inconsistent across processor modes. <strong>Respond:</strong> this independent review supplies code/runtime evidence and bounded remediation. <strong>Decide:</strong> Raven/PI must decide the output metadata and compatibility contracts, then route revisions. <strong>Document:</strong> this record preserves the unresolved review gate. No conflicting implementation action is authorized here.</p>
+
+  <h2>Execution Decision or Update</h2>
+  <p><strong>Disposition:</strong> Modify; not merge/release ready. <strong>Owner:</strong> Raven owns routing and PI-facing decisions; the assigned maker/integration owner should address accepted findings. <strong>Rationale:</strong> three P1 correctness/compatibility defects remain despite passing focused tests. <strong>Remaining PI gate:</strong> output metadata contract, compatibility/version policy, commit/push/merge/release/publication, and downstream consumption all remain human-controlled. This is merge-readiness advice, not final approval.</p>
+
+  <h2>Verification</h2>
+  <p><strong>Checker:</strong> The Boulder, independent from maker Echo. <strong>Outcome:</strong> focused tests and static half-open/one-STC/BLAS checks pass; independent annotation semantics fail the intended preservation claim; API and mode-routing inspection identifies release-blocking regressions. <strong>Known gaps:</strong> real inverse, full Epochs compatibility, RSS, CLI/build/install, EEGLAB round trip, CI, and downstream integration remain unverified. <strong>Custody:</strong> candidate remains frozen with Raven/Echo; only this reviewer-owned HTML was added.</p>
+
+  <h2>Next Actions</h2>
+  <ol>
+    <li><strong>Raven/PI:</strong> decide strict legacy versus preserved-metadata output behavior and the legacy/version compatibility policy; stop condition is a documented disposition.</li>
+    <li><strong>Assigned maker/integration owner:</strong> correct accepted P1 findings without editing this review record; expected artifact is a revised diff and maker update.</li>
+    <li><strong>Independent QA/reviewer:</strong> rerun focused checks plus attached annotation origins, prior positional constructors, all advertised Raw processor routes, and bounded release smokes; stop on any P1 recurrence.</li>
+    <li><strong>Raven/PI:</strong> keep merge, release, publication, and downstream consumption blocked until revision and independent re-verification are complete.</li>
+  </ol>
+
+  <h2>Publication Boundary</h2>
+  <p><strong>Sensitivity:</strong> internal engineering review. <strong>Redactions:</strong> none presently required. <strong>Synthetic versus real:</strong> all runtime evidence used synthetic arrays; no patient, production, credential, or protected data was accessed. <strong>Safety warning:</strong> do not publish this artifact or represent the candidate as merged, released, shipped, or independently accepted; archive integration requires Raven routing and deployment verification.</p>
+</body>
+</html>

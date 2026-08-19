@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>003 — Version mapped; test environment blocked</title>
+</head>
+<body>
+  <h1>Correspondence 003: Published 0.3.7 mapped; test-first implementation blocked by local Python access</h1>
+  <dl>
+    <dt>From</dt><dd>Echo — Software Engineer</dd>
+    <dt>To</dt><dd>Raven — Engineering Delivery and Loop Coordinator</dd>
+    <dt>Date</dt><dd>2026-08-17 (America/New_York)</dd>
+    <dt>Re</dt><dd>Issue #271 exact-version proof and maker continuation</dd>
+    <dt>Correspondence number</dt><dd>003</dd>
+    <dt>Source thread ID</dt><dd>01a010a6-ecbb-74e1-938e-dc426c2bb9dd</dd>
+    <dt>Local work thread ID</dt><dd>T-2026-08-17-003</dd>
+    <dt>Role thread</dt><dd>Echo standing project role (current task)</dd>
+    <dt>Status</dt><dd>Provenance verified; implementation blocked</dd>
+    <dt>Record type</dt><dd>PI-authorized provenance result and execution blocker</dd>
+  </dl>
+
+  <h2>Request Summary</h2>
+  <p>Raven supplied the authoritative legacy <code>autoclean-eeg2source==0.3.7</code> sdist and authorized Echo to resume only if exact-version proof passed. Echo was to extract it into a bounded repository directory, compare its source payload with clean Git commits, then add and run a failing allocation-boundary characterization plus a locked whole-Raw oracle before repairing the quarantined chunking candidate. No commit, push, release, publication, downstream change, or silent zero-value compatibility was authorized.</p>
+
+  <h2>Execution Update</h2>
+  <p>The exact-version proof gate passed. The supplied archive SHA-256 is <code>65f9d27d93675c71da1e40ce6b00e7da915af475be6d14ef7d87c29b96d3dbb4</code>, exactly matching the supplied authoritative value. The archive was listed before extraction and contains one bounded top-level directory with no observed traversal entry.</p>
+  <p>The archive and three clean Git snapshots were extracted under <code>working_assets/provenance-0.3.7/</code>. All 20 packaged Python source files and all 5 packaged tests are text-identical to commit <code>22545f4f394562a98db400b1bf6212dfde2f4d52</code> after normalizing line endings. The raw-byte difference is systematic archive LF versus locally extracted Git CRLF, not a content difference. The archive's <code>pyproject.toml</code> and <code>setup.py</code> also have no textual diff against that commit.</p>
+  <p>Commit <code>fd57b06956990cdb1cf841bbda1e5918153f73ac</code> is the direct child of <code>22545f4</code>. Relative to the legacy artifact, it changes two source strings: the CLI version display and example greeting from <code>autoclean-eeg2source</code> to <code>autocleaneeg-eeg2source</code>. Current HEAD <code>0f1c07e26421475be218328ed718ddb997e327b0</code> retains exactly those two source differences. Other root differences are repository-only files, renamed-package metadata/documentation, or generated sdist metadata.</p>
+  <p>Therefore <code>22545f4</code> is established as the immutable source baseline for the supplied published legacy 0.3.7 artifact. Current HEAD is its renamed-distribution continuation, with the source delta bounded to the two documented strings before the quarantined dirty implementation is considered.</p>
+
+  <h2>Advisory Inputs Incorporated</h2>
+  <p>Wave's supplied advisory defines candidate equivalence as exact sample order and scientific settings with <code>rtol=1e-10</code> and <code>atol=1e-15</code>; annotation and <code>first_samp</code> preservation remain unproven and must not be claimed. Cipher's supplied findings require strict finite positive bounded <code>chunk_seconds</code>, one-chunk-live cleanup including failure paths, worker default 1 without nested all-core concurrency, and bounded RSS/output/API checks. Echo did not independently contact Wave or Cipher in this task.</p>
+
+  <h2>Environment Blocker</h2>
+  <p>The required test-first phase could not start. System Python is 3.13 and lacks MNE/pytest, while project metadata requires Python below 3.13. Echo attempted a strictly offline, frozen <code>uv</code> launch so no dependency could be downloaded. The initial command failed before dependency resolution because <code>uv</code> could not initialize its configured cache path. The one permitted focused recovery used a repository-local <code>UV_CACHE_DIR</code>, retained <code>--offline --frozen</code>, and failed before Python launch because sandbox access to the managed-Python directory was denied. Per the team environment recovery rule, Echo stopped after this focused recovery instead of trying further path/cache variants.</p>
+
+  <h2>Exact Command Evidence</h2>
+  <ul>
+    <li><code>Get-FileHash -Algorithm SHA256 working_assets\autoclean_eeg2source-0.3.7.tar.gz</code> — exit 0; exact expected hash.</li>
+    <li><code>tar -tf working_assets\autoclean_eeg2source-0.3.7.tar.gz</code> — exit 0; bounded archive listing.</li>
+    <li><code>tar -xf ... -C working_assets\provenance-0.3.7</code> plus <code>git archive</code> snapshots for <code>22545f4</code>, <code>fd57b06</code>, and HEAD — exit 0; completed in approximately 2.6 seconds.</li>
+    <li><code>git diff --no-index</code> source comparisons — expected exit 0 for artifact versus <code>22545f4</code> source; expected exit 1 with only two one-line source diffs versus <code>fd57b06</code>/HEAD.</li>
+    <li>Normalized in-memory SHA-256 comparison — 25 of 25 packaged source/test files equal to <code>22545f4</code>; no normalized mismatch.</li>
+    <li><code>uv run --offline --frozen python -B -c "import sys,mne,numpy,pytest; ..."</code> — exit 2 in 1.3 seconds; failed to initialize <code>C:\Users\SYEX8X\AppData\Local\uv\cache</code>, OS error 183.</li>
+    <li><code>$env:UV_CACHE_DIR=(Join-Path (Get-Location) '.uv-cache-echo'); uv run --offline --frozen python -B -c "..."</code> — exit 2 in 1.6 seconds; access denied reading <code>C:\Users\SYEX8X\AppData\Roaming\uv\python</code>.</li>
+  </ul>
+
+  <h2>Dirty-State and Diff Custody</h2>
+  <p>Echo did not modify the five quarantined source files or <code>tests/test_raw_chunking.py</code>. Their pre-existing tracked diff remains 174 insertions and 72 deletions. Echo added only bounded provenance extraction material, a repository-local uv-cache directory created by the failed recovery, and this correspondence record. No candidate test was executed, so the implementation remains unaccepted. The implementation diff is safe for a correctly provisioned owner to continue because no source/test bytes changed during this continuation.</p>
+
+  <h2>Scope Limits</h2>
+  <p>No network access, dependency download, package installation, pytest execution, EEG data access, scientific interpretation, source/test edit, worktree, commit, push, release, publication, or downstream AutoClean change occurred. Exact MNE stop-bound semantics and live allocation behavior remain unexecuted. The extracted comparison workspace has not been deleted because destructive cleanup was not authorized and it is useful provenance evidence.</p>
+
+  <h2>Conflict Status</h2>
+  <p><strong>Flag:</strong> provenance now permits implementation, but the required characterization-first workflow cannot execute in the available sandboxed Python environment. <strong>Respond:</strong> Echo made one strictly offline, repository-local cache recovery. <strong>Decide:</strong> Raven must route a task with readable project Python/uv locations or authorize an exact narrow environment action. <strong>Document:</strong> this record.</p>
+
+  <h2>Execution Decision or Update</h2>
+  <p><strong>Disposition:</strong> accept exact-version mapping; pause implementation. <strong>Owner:</strong> Raven retains integration custody; Echo can resume when the focused test command can launch. <strong>Remaining gate:</strong> provision a readable Python 3.9–3.12 environment with locked dependencies, or explicitly authorize the narrow environment access needed by <code>uv</code>. No product-design or scientific gate was decided here.</p>
+
+  <h2>Verification</h2>
+  <p><strong>Checker:</strong> Echo performed maker-side provenance checks; no independent QA was contacted. <strong>Outcome:</strong> artifact hash and Git mapping passed; environment probe failed; tests and implementation blocked. <strong>Known gaps:</strong> failing baseline allocation characterization, locked whole-Raw oracle, equivalence, final partial chunk, cleanup on injected failure, worker budget, finite validation, Epochs invariance, annotation/<code>first_samp</code>, RSS, explicit API/capability signal, build/install smoke, independent QA, and code review. <strong>Custody:</strong> provenance evidence is local and uncommitted; quarantined candidate remains untouched.</p>
+
+  <h2>Next Actions</h2>
+  <ol>
+    <li><strong>Raven:</strong> provide a task/environment with readable locked Python dependencies or authorize the exact narrow environment repair. Stop condition: no candidate edit until the baseline characterization can be run.</li>
+    <li><strong>Echo after recovery:</strong> add the failing allocation-boundary characterization and locked unchunked oracle first, run them against the immutable baseline, then repair the candidate using Wave/Cipher boundaries.</li>
+    <li><strong>Raven:</strong> route independent QA and final review after maker completion.</li>
+  </ol>
+
+  <h2>Publication Boundary</h2>
+  <p><strong>Sensitivity:</strong> internal engineering provenance and environment record. <strong>Redactions:</strong> none required. <strong>Synthetic versus real:</strong> no EEG data or scientific output was used. <strong>Safety warning:</strong> do not publish this record or extracted workspace, and do not represent the dirty candidate as tested, verified, released, or shipped.</p>
+</body>
+</html>
