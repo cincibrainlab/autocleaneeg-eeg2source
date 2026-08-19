@@ -1,6 +1,6 @@
 """AutoClean EEG2Source: EEG source localization with DK atlas regions."""
 
-__version__ = "0.3.7"
+__version__ = "0.4.0"
 __author__ = "AutoClean Team"
 RAW_CHUNKING_CAPABILITY = "sequential-raw-chunking-v1"
 
