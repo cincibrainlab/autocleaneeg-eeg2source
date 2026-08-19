@@ -2,6 +2,7 @@
 
 __version__ = "0.3.7"
 __author__ = "AutoClean Team"
+RAW_CHUNKING_CAPABILITY = "sequential-raw-chunking-v1"
 
 from .core.converter import SequentialProcessor
 from .core.memory_manager import MemoryManager
@@ -19,6 +20,7 @@ __all__ = [
     "RobustProcessor",
     "ContinuousProcessor",
     "MemoryManager",
+    "RAW_CHUNKING_CAPABILITY",
     
     # IO and validation
     "EEGLABReader",

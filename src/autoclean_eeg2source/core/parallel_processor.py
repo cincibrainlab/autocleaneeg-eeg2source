@@ -55,9 +55,10 @@ class ParallelProcessor(SequentialProcessor):
                  montage: str = "GSN-HydroCel-129",
                  resample_freq: float = 250,
                  lambda2: float = 1.0 / 9.0,
-                 n_jobs: int = -1,
+                 n_jobs: int = 1,
                  batch_size: int = 4,
-                 parallel_method: str = 'processes'):
+                 parallel_method: str = 'processes',
+                 chunk_seconds: float = 30.0):
         """
         Initialize parallel processor.
         
@@ -72,21 +73,32 @@ class ParallelProcessor(SequentialProcessor):
         lambda2 : float
             Regularization parameter for inverse solution
         n_jobs : int
-            Number of parallel jobs (-1 for all cores)
+            Outer/label-processing workers. ``-1`` preserves the legacy
+            all-available-cores behavior; the default is 1.
         batch_size : int
             Number of epochs to process in parallel
         parallel_method : str
             Method for parallelization ('processes' or 'threads')
+        chunk_seconds : float, optional
+            Continuous/raw inverse chunk length in seconds
         """
         super().__init__(
             memory_manager=memory_manager,
             montage=montage,
             resample_freq=resample_freq,
-            lambda2=lambda2
+            lambda2=lambda2,
+            chunk_seconds=chunk_seconds
         )
         
         # Set number of parallel jobs
-        self.n_jobs = n_jobs if n_jobs > 0 else mp.cpu_count()
+        if isinstance(n_jobs, bool) or not isinstance(n_jobs, int):
+            raise ValueError("n_jobs must be -1 or a positive integer")
+        if n_jobs == -1:
+            self.n_jobs = mp.cpu_count()
+        elif n_jobs > 0:
+            self.n_jobs = n_jobs
+        else:
+            raise ValueError("n_jobs must be -1 or a positive integer")
         self.batch_size = batch_size
         self.parallel_method = parallel_method
         
@@ -122,7 +134,7 @@ class ParallelProcessor(SequentialProcessor):
             bem=self.fsaverage_bem,
             eeg=True, 
             mindist=5.0, 
-            n_jobs=self.n_jobs  # Use parallel processing
+            n_jobs=1  # Keep source-space work single-threaded per file
         )
         
         self.memory_manager.log_memory_status("After forward solution")
@@ -161,6 +173,8 @@ class ParallelProcessor(SequentialProcessor):
             # Validate input file
             logger.info(f"Processing: {os.path.basename(input_file)}")
             report = self.validator.validate_file_pair(input_file)
+            if report['file_type'] == 'raw':
+                return SequentialProcessor.process_file(self, input_file, output_dir)
             
             # Check memory before starting
             self.memory_manager.check_available()
@@ -429,8 +443,11 @@ class ParallelProcessor(SequentialProcessor):
         """
         logger.info(f"Processing {len(file_list)} files in batch mode")
         
-        # Use provided max_workers or default to n_jobs
-        max_workers = max_workers or self.n_jobs
+        # Resolve the public all-core sentinel before the executor boundary.
+        if max_workers is None or max_workers == -1:
+            max_workers = self.n_jobs
+        if isinstance(max_workers, bool) or not isinstance(max_workers, int) or max_workers <= 0:
+            raise ValueError("max_workers must be -1 or a positive integer")
         
         # For process-based parallelism, we need to pass both file_path and output_dir
         # Use module-level helper function with output_dir
@@ -473,10 +490,11 @@ class CachedProcessor(ParallelProcessor):
                  montage: str = "GSN-HydroCel-129",
                  resample_freq: float = 250,
                  lambda2: float = 1.0 / 9.0,
-                 n_jobs: int = -1,
+                 n_jobs: int = 1,
                  batch_size: int = 4,
                  parallel_method: str = 'processes',
-                 cache_dir: Optional[str] = None):
+                 cache_dir: Optional[str] = None,
+                 chunk_seconds: float = 30.0):
         """
         Initialize cached processor.
         
@@ -491,19 +509,22 @@ class CachedProcessor(ParallelProcessor):
         lambda2 : float
             Regularization parameter for inverse solution
         n_jobs : int
-            Number of parallel jobs (-1 for all cores)
+            Positive number of parallel jobs; defaults conservatively to 1
         batch_size : int
             Number of epochs to process in parallel
         parallel_method : str
             Method for parallelization ('processes' or 'threads')
         cache_dir : str, optional
             Directory for caching intermediate results
+        chunk_seconds : float, optional
+            Continuous/raw inverse chunk length in seconds
         """
         super().__init__(
             memory_manager=memory_manager,
             montage=montage,
             resample_freq=resample_freq,
             lambda2=lambda2,
+            chunk_seconds=chunk_seconds,
             n_jobs=n_jobs,
             batch_size=batch_size,
             parallel_method=parallel_method

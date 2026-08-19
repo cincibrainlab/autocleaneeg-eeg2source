@@ -10,6 +10,7 @@ import numpy as np
 import mne
 
 from .parallel_processor import ParallelProcessor
+from .converter import SequentialProcessor
 from .memory_manager import MemoryManager
 from ..io.exceptions import ProcessingError
 
@@ -135,10 +136,11 @@ class GPUProcessor(ParallelProcessor):
                  montage: str = "GSN-HydroCel-129",
                  resample_freq: float = 250,
                  lambda2: float = 1.0 / 9.0,
-                 n_jobs: int = -1,
+                 n_jobs: int = 1,
                  batch_size: int = 4,
                  parallel_method: str = 'processes',
-                 gpu_backend: str = 'auto'):
+                 gpu_backend: str = 'auto',
+                 chunk_seconds: float = 30.0):
         """
         Initialize GPU processor.
         
@@ -153,19 +155,22 @@ class GPUProcessor(ParallelProcessor):
         lambda2 : float
             Regularization parameter for inverse solution
         n_jobs : int
-            Number of parallel jobs (-1 for all cores)
+            Positive number of parallel jobs; defaults conservatively to 1
         batch_size : int
             Number of epochs to process in parallel
         parallel_method : str
             Method for parallelization ('processes' or 'threads')
         gpu_backend : str
             GPU backend to use ('cupy', 'pytorch', 'tensorflow', or 'auto')
+        chunk_seconds : float, optional
+            Continuous/raw inverse chunk length in seconds
         """
         super().__init__(
             memory_manager=memory_manager,
             montage=montage,
             resample_freq=resample_freq,
             lambda2=lambda2,
+            chunk_seconds=chunk_seconds,
             n_jobs=n_jobs,
             batch_size=batch_size,
             parallel_method=parallel_method
@@ -298,6 +303,8 @@ class GPUProcessor(ParallelProcessor):
             # Validate input file
             logger.info(f"Processing: {os.path.basename(input_file)}")
             report = self.validator.validate_file_pair(input_file)
+            if report['file_type'] == 'raw':
+                return SequentialProcessor.process_file(self, input_file, output_dir)
             
             # Check memory before starting
             self.memory_manager.check_available()
@@ -467,7 +474,7 @@ class GPUProcessor(ParallelProcessor):
         # with n_jobs parameter for parallelization
         stcs = mne.minimum_norm.apply_inverse_epochs(
             epochs, inv, lambda2=self.lambda2, method="MNE", 
-            pick_ori='normal', verbose=False, n_jobs=self.n_jobs
+            pick_ori='normal', verbose=False, n_jobs=1
         )
         
         # In an actual implementation, we would do the GPU computation here
@@ -488,7 +495,7 @@ class GPUProcessor(ParallelProcessor):
         # For demonstration purposes, we'll fall back to MNE's implementation
         stcs = mne.minimum_norm.apply_inverse_epochs(
             epochs, inv, lambda2=self.lambda2, method="MNE", 
-            pick_ori='normal', verbose=False, n_jobs=self.n_jobs
+            pick_ori='normal', verbose=False, n_jobs=1
         )
         
         return stcs
@@ -505,7 +512,7 @@ class GPUProcessor(ParallelProcessor):
         # For demonstration purposes, we'll fall back to MNE's implementation
         stcs = mne.minimum_norm.apply_inverse_epochs(
             epochs, inv, lambda2=self.lambda2, method="MNE", 
-            pick_ori='normal', verbose=False, n_jobs=self.n_jobs
+            pick_ori='normal', verbose=False, n_jobs=1
         )
         
         return stcs

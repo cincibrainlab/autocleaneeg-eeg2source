@@ -33,7 +33,8 @@ class RobustProcessor(SequentialProcessor):
                  resample_freq: float = 250,
                  lambda2: float = 1.0 / 9.0,
                  recovery_mode: bool = True,
-                 error_dir: Optional[str] = None):
+                 error_dir: Optional[str] = None,
+                 chunk_seconds: float = 30.0):
         """
         Initialize robust processor.
         
@@ -51,12 +52,15 @@ class RobustProcessor(SequentialProcessor):
             Whether to use recovery strategies for errors
         error_dir : str, optional
             Directory to save error reports
+        chunk_seconds : float, optional
+            Continuous/raw inverse chunk length in seconds
         """
         super().__init__(
             memory_manager=memory_manager,
             montage=montage,
             resample_freq=resample_freq,
-            lambda2=lambda2
+            lambda2=lambda2,
+            chunk_seconds=chunk_seconds
         )
         
         self.recovery_mode = recovery_mode
@@ -295,7 +299,8 @@ class RobustProcessor(SequentialProcessor):
                             memory_manager=self.memory_manager,
                             montage=alt_montage,
                             resample_freq=self.resample_freq,
-                            lambda2=self.lambda2
+                            lambda2=self.lambda2,
+                            chunk_seconds=self.chunk_seconds
                         )
                         
                         # Try processing
@@ -415,7 +420,8 @@ class RobustProcessor(SequentialProcessor):
                     memory_manager=self.memory_manager,
                     montage=self.montage,
                     resample_freq=lower_freq,
-                    lambda2=self.lambda2
+                    lambda2=self.lambda2,
+                    chunk_seconds=self.chunk_seconds
                 )
                 
                 # Try processing
@@ -473,7 +479,8 @@ class RobustProcessor(SequentialProcessor):
                     memory_manager=self.memory_manager,
                     montage=self.montage,
                     resample_freq=lower_freq,
-                    lambda2=self.lambda2
+                    lambda2=self.lambda2,
+                    chunk_seconds=self.chunk_seconds
                 )
                 
                 # Try processing
@@ -559,7 +566,8 @@ class RobustProcessor(SequentialProcessor):
                     memory_manager=MemoryManager(max_memory_gb=2),  # Limit memory
                     montage=self.montage,
                     resample_freq=100,  # Lower frequency
-                    lambda2=1.0/4.0  # More regularization
+                    lambda2=1.0/4.0,  # More regularization
+                    chunk_seconds=self.chunk_seconds
                 )
                 
                 # Try processing

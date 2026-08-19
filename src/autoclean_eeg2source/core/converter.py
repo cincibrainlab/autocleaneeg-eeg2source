@@ -3,6 +3,8 @@
 import os
 import gc
 import logging
+import math
+import numbers
 from typing import Optional, Dict, Any
 import numpy as np
 import mne
@@ -15,6 +17,8 @@ from .memory_manager import MemoryManager
 
 logger = logging.getLogger(__name__)
 
+MAX_RAW_CHUNK_SECONDS = 3600.0
+
 
 class SequentialProcessor:
     """Sequential processor for EEG to source localization conversion."""
@@ -23,7 +27,8 @@ class SequentialProcessor:
                  memory_manager: Optional[MemoryManager] = None,
                  montage: str = "GSN-HydroCel-129",
                  resample_freq: float = 250,
-                 lambda2: float = 1.0 / 9.0):
+                 lambda2: float = 1.0 / 9.0,
+                 chunk_seconds: float = 30.0):
         """
         Initialize sequential processor.
         
@@ -37,11 +42,24 @@ class SequentialProcessor:
             Target sampling frequency
         lambda2 : float
             Regularization parameter for inverse solution
+        chunk_seconds : float
+            Finite continuous/raw inverse chunk length in seconds, greater
+            than zero and no more than 3600 seconds.
         """
         self.memory_manager = memory_manager or MemoryManager()
         self.montage = montage
         self.resample_freq = resample_freq
         self.lambda2 = lambda2
+        if isinstance(chunk_seconds, bool) or not isinstance(chunk_seconds, numbers.Real):
+            raise TypeError("chunk_seconds must be a real number")
+        if not math.isfinite(chunk_seconds):
+            raise ValueError("chunk_seconds must be finite")
+        if not 0 < chunk_seconds <= MAX_RAW_CHUNK_SECONDS:
+            raise ValueError(
+                f"chunk_seconds must be greater than 0 and no more than "
+                f"{MAX_RAW_CHUNK_SECONDS:g}"
+            )
+        self.chunk_seconds = float(chunk_seconds)
         
         # Cache for forward solution to avoid recomputation
         self.forward_solution = None
@@ -189,20 +207,16 @@ class SequentialProcessor:
 
             
             # Apply inverse solution
-            logger.info("Applying inverse solution to epochs...")
+            logger.info("Applying inverse solution...")
+            stcs = None
             if report['file_type'] == 'epochs':
                 stcs = mne.minimum_norm.apply_inverse_epochs(
                         epochs, inv, lambda2=self.lambda2, method="MNE", 
                         pick_ori='normal', verbose=False
                     )
-            else:
-                if report['file_type'] == 'raw':
-                    stcs = mne.minimum_norm.apply_inverse_raw(
-                        epochs, inv, lambda2=self.lambda2, method="MNE", 
-                        pick_ori='normal', verbose=False
-                    )
             
-            # Convert to EEG format with DK regions
+            # Convert to EEG format with DK regions. Raw data uses the chunked
+            # path so high-concurrency workers do not each hold a full STC.
             logger.info("Converting source estimates to EEG format...")
             if report['file_type'] == 'epochs':
                 output_epochs, output_file = self._convert_stc_to_eeg(
@@ -211,9 +225,11 @@ class SequentialProcessor:
                     original_epochs=epochs
                 )
             else:
-                output_epochs, output_file = self.convert_raw_stc_to_eeg(
-                    stcs, output_dir, 
-                    subject_id=os.path.splitext(os.path.basename(input_file))[0]
+                output_epochs, output_file = self._convert_raw_inverse_to_eeg(
+                    epochs,
+                    inv,
+                    output_dir,
+                    subject_id=os.path.splitext(os.path.basename(input_file))[0],
                 )
             
             # Update result
@@ -221,7 +237,8 @@ class SequentialProcessor:
             result['output_file'] = output_file
             
             # Cleanup
-            del epochs, inv, stcs, output_epochs
+            del epochs, inv, output_epochs
+            del stcs
             gc.collect()
             self.memory_manager.cleanup()
             
@@ -378,49 +395,66 @@ class SequentialProcessor:
         pd.DataFrame(region_info).to_csv(info_file, index=False)
         logger.debug(f"Saved region info to {info_file}")
 
-    def convert_raw_stc_to_eeg(self, stc: mne.SourceEstimate, output_dir: str, subject_id: str) -> tuple:
-        """
-        Convert a single raw SourceEstimate to EEG format with DK atlas regions.
-        
-        Parameters
-        ----------
-        stc : mne.SourceEstimate
-            Source estimate from continuous/raw data
-        output_dir : str
-            Directory to save output files
-        subject_id : str
-            Subject identifier for naming output files
-            
-        Returns
-        -------
-        raw : mne.io.Raw
-            Raw object with source time courses
-        output_file : str
-            Path to saved output file
-        """
+    def _convert_raw_inverse_to_eeg(
+        self,
+        raw: mne.io.BaseRaw,
+        inv: mne.minimum_norm.InverseOperator,
+        output_dir: str,
+        subject_id: str,
+    ) -> tuple:
+        """Apply raw inverse in chunks and export DK atlas region time courses."""
+        label_ts = self._extract_raw_label_time_course(raw, inv)
+        return self._convert_raw_label_ts_to_eeg(
+            label_ts,
+            sfreq=raw.info["sfreq"],
+            output_dir=output_dir,
+            subject_id=subject_id,
+            first_samp=raw.first_samp,
+            meas_date=raw.info.get("meas_date"),
+            annotations=raw.annotations,
+        )
+
+    def convert_raw_stc_to_eeg(
+        self, stc: mne.SourceEstimate, output_dir: str, subject_id: str
+    ) -> tuple:
+        """Convert a raw SourceEstimate to EEG format with DK atlas regions."""
         logger.info("Converting raw source estimate to EEG format...")
-        
-        # Extract time series for each label
         logger.info(f"Extracting time courses for {len(self.labels)} regions...")
         label_ts = mne.extract_label_time_course(
-            stc, self.labels, src=self.fsaverage_src, 
+            stc, self.labels, src=self.fsaverage_src,
             mode='mean', verbose=False
         )
-        
-        # Get properties
+        return self._convert_raw_label_ts_to_eeg(
+            label_ts,
+            sfreq=1.0 / stc.tstep,
+            output_dir=output_dir,
+            subject_id=subject_id,
+        )
+
+    def _convert_raw_label_ts_to_eeg(
+        self,
+        label_ts: np.ndarray,
+        sfreq: float,
+        output_dir: str,
+        subject_id: str,
+        first_samp: int = 0,
+        meas_date=None,
+        annotations=None,
+    ) -> tuple:
+        """Convert raw label data while preserving the input Raw time base.
+
+        ``annotations`` must be attached-source annotations. MNE stores
+        ``orig_time=None`` onsets with ``first_samp`` already applied, so they
+        are made relative before attaching them to the equivalent output time
+        base. Absolute annotations retain their origin and measurement date.
+        """
         n_regions = len(self.labels)
-        n_times = stc.data.shape[1]
-        sfreq = 1.0 / stc.tstep
         ch_names = [label.name for label in self.labels]
-        
-        # Create channel positions
         ch_pos = {}
         for i, label in enumerate(self.labels):
-            # Extract centroid of the label
             if hasattr(label, 'pos') and len(label.pos) > 0:
                 centroid = np.mean(label.pos, axis=0)
             else:
-                # If no positions available, create a point on a unit sphere using golden ratio
                 phi = (1 + np.sqrt(5)) / 2
                 idx = i + 1
                 theta = 2 * np.pi * idx / phi**2
@@ -429,36 +463,85 @@ class SequentialProcessor:
                     np.sin(phi) * np.cos(theta),
                     np.sin(phi) * np.sin(theta),
                     np.cos(phi)
-                ]) * 0.1  # Scaled to approximate head radius
-            
-            # Store in dictionary
+                ]) * 0.1
             ch_pos[label.name] = centroid
-        
-        # Create MNE Info
+
         info = mne.create_info(
-            ch_names=ch_names, 
-            sfreq=sfreq, 
+            ch_names=ch_names,
+            sfreq=sfreq,
             ch_types=['eeg'] * n_regions
         )
-        
-        # Update channel positions
+        info.set_meas_date(meas_date)
         for idx, ch_name in enumerate(ch_names):
             info['chs'][idx]['loc'][:3] = ch_pos[ch_name]
-        
-        # Create Raw object
-        raw = mne.io.RawArray(
-            label_ts, info, first_samp=0,
-            verbose=False
-        )
-        
-        # Save to EEGLAB format
+
+        raw = mne.io.RawArray(label_ts, info, first_samp=first_samp, verbose=False)
+        if annotations is not None:
+            output_annotations = annotations.copy()
+            if output_annotations.orig_time is None:
+                output_annotations.onset -= first_samp / sfreq
+            raw.set_annotations(output_annotations)
+
         os.makedirs(output_dir, exist_ok=True)
         output_file = os.path.join(output_dir, f"{subject_id}_dk_regions.set")
         raw.export(output_file, fmt='eeglab', overwrite=True)
-        
+
         logger.info(f"Saved {n_regions} regions to {output_file}")
-        
-        # Save metadata
         self._save_metadata(output_dir, subject_id, ch_names, ch_pos)
-        
         return raw, output_file
+
+    def _extract_raw_label_time_course(
+        self, raw: mne.io.BaseRaw, inv: mne.minimum_norm.InverseOperator
+    ) -> np.ndarray:
+        """Apply inverse to raw data in chunks and concatenate label time courses."""
+        chunks = self._raw_chunk_bounds(raw)
+        label_chunks = []
+
+        logger.info(
+            "Applying inverse solution to raw data in %s chunk(s) of up to %s seconds",
+            len(chunks),
+            self.chunk_seconds,
+        )
+
+        for chunk_index, (start, stop) in enumerate(chunks, 1):
+            logger.debug(
+                "Processing raw inverse chunk %s/%s samples %s:%s",
+                chunk_index,
+                len(chunks),
+                start,
+                stop,
+            )
+            stc = None
+            try:
+                stc = mne.minimum_norm.apply_inverse_raw(
+                    raw,
+                    inv,
+                    lambda2=self.lambda2,
+                    method="MNE",
+                    pick_ori="normal",
+                    start=start,
+                    stop=stop,
+                    verbose=False,
+                )
+                label_chunks.append(
+                    mne.extract_label_time_course(
+                        stc, self.labels, src=self.fsaverage_src,
+                        mode="mean", verbose=False
+                    )
+                )
+            finally:
+                del stc
+                gc.collect()
+                self.memory_manager.cleanup()
+            self.memory_manager.check_available()
+
+        return np.concatenate(label_chunks, axis=1)
+
+    def _raw_chunk_bounds(self, raw: mne.io.BaseRaw) -> list:
+        """Return half-open sample bounds for memory-safe raw inverse chunks."""
+        n_times = raw.n_times
+        chunk_size = max(1, int(round(self.chunk_seconds * raw.info["sfreq"])))
+        return [
+            (start, min(start + chunk_size, n_times))
+            for start in range(0, n_times, chunk_size)
+        ]
