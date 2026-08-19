@@ -494,6 +494,9 @@ class SequentialProcessor:
         self, raw: mne.io.BaseRaw, inv: mne.minimum_norm.InverseOperator
     ) -> np.ndarray:
         """Apply inverse to raw data in chunks and concatenate label time courses."""
+        if raw.n_times == 0:
+            raise ValueError("Cannot apply inverse solution to an empty Raw recording (n_times=0)")
+
         chunks = self._raw_chunk_bounds(raw)
         label_chunks = []
 

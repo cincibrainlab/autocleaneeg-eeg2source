@@ -474,7 +474,7 @@ class GPUProcessor(ParallelProcessor):
         # with n_jobs parameter for parallelization
         stcs = mne.minimum_norm.apply_inverse_epochs(
             epochs, inv, lambda2=self.lambda2, method="MNE", 
-            pick_ori='normal', verbose=False, n_jobs=1
+            pick_ori='normal', verbose=False
         )
         
         # In an actual implementation, we would do the GPU computation here
@@ -495,7 +495,7 @@ class GPUProcessor(ParallelProcessor):
         # For demonstration purposes, we'll fall back to MNE's implementation
         stcs = mne.minimum_norm.apply_inverse_epochs(
             epochs, inv, lambda2=self.lambda2, method="MNE", 
-            pick_ori='normal', verbose=False, n_jobs=1
+            pick_ori='normal', verbose=False
         )
         
         return stcs
@@ -512,7 +512,7 @@ class GPUProcessor(ParallelProcessor):
         # For demonstration purposes, we'll fall back to MNE's implementation
         stcs = mne.minimum_norm.apply_inverse_epochs(
             epochs, inv, lambda2=self.lambda2, method="MNE", 
-            pick_ori='normal', verbose=False, n_jobs=1
+            pick_ori='normal', verbose=False
         )
         
         return stcs

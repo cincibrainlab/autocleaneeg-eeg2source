@@ -64,6 +64,17 @@ def test_raw_chunk_bounds_uses_half_open_sample_windows(memory_manager):
     ]
 
 
+def test_extract_raw_label_time_course_rejects_empty_raw(memory_manager):
+    processor = _processor(memory_manager, chunk_seconds=0.5)
+    raw = DummyRaw(sfreq=10.0, n_times=0)
+
+    # _raw_chunk_bounds returns [] for n_times=0, which used to reach
+    # np.concatenate([]) and raise an opaque "need at least one array to
+    # concatenate" error instead of a clear one.
+    with pytest.raises(ValueError, match="empty Raw recording"):
+        processor._extract_raw_label_time_course(raw, inv=object())
+
+
 def test_raw_inverse_chunking_concatenates_label_time_courses(
     monkeypatch, memory_manager
 ):
@@ -415,13 +426,18 @@ def test_gpu_fallback_inverse_is_single_worker(
         lambda: {"gpu_count": 0, "gpu_available": False},
     )
     processor = GPUProcessor(memory_manager=memory_manager, n_jobs=-1)
+    # apply_inverse_epochs has no n_jobs parameter; bind against its real
+    # signature (captured before mocking) so a reintroduced invalid kwarg
+    # raises here instead of silently succeeding against a MagicMock.
+    real_signature = inspect.signature(mne.minimum_norm.apply_inverse_epochs)
     apply_epochs = MagicMock(return_value=[])
     monkeypatch.setattr(mne.minimum_norm, "apply_inverse_epochs", apply_epochs)
 
     getattr(processor, method_name)(MagicMock(), object(), np.zeros((1, 1)))
 
+    real_signature.bind(*apply_epochs.call_args.args, **apply_epochs.call_args.kwargs)
+    assert "n_jobs" not in apply_epochs.call_args.kwargs
     assert processor.n_jobs == mp.cpu_count()
-    assert apply_epochs.call_args.kwargs["n_jobs"] == 1
 
 
 def test_process_batch_resolves_legacy_all_core_sentinel(monkeypatch, memory_manager):
@@ -449,6 +465,51 @@ def test_process_batch_resolves_legacy_all_core_sentinel(monkeypatch, memory_man
     assert processor.process_batch([], "unused", max_workers=-1) == []
     assert captured["max_workers"] == processor.n_jobs
     assert captured["max_workers"] > 0
+
+
+def test_process_batch_forwards_processor_config_to_workers(monkeypatch, memory_manager):
+    captured = {}
+
+    class FakeExecutor:
+        def __init__(self, max_workers):
+            captured["max_workers"] = max_workers
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def submit(self, process_func, file_path):
+            captured["process_func"] = process_func
+            future = MagicMock()
+            future.result.return_value = {"input_file": file_path, "status": "success"}
+            return future
+
+    monkeypatch.setattr(
+        "autoclean_eeg2source.core.parallel_processor.ProcessPoolExecutor",
+        FakeExecutor,
+    )
+    processor = ParallelProcessor(
+        memory_manager=memory_manager,
+        montage="standard_1020",
+        resample_freq=125.0,
+        lambda2=1.0 / 4.0,
+        chunk_seconds=5.0,
+    )
+
+    results = processor.process_batch(["subject.set"], "out", max_workers=1)
+
+    assert results == [{"input_file": "subject.set", "status": "success"}]
+    # Regression: _process_batch_helper used to hardcode montage/resample_freq/
+    # lambda2/chunk_seconds to class defaults instead of the calling
+    # processor's actual configuration, so --chunk-seconds was silently
+    # ignored in --batch-processing mode.
+    forwarded = captured["process_func"].keywords
+    assert forwarded["montage"] == "standard_1020"
+    assert forwarded["resample_freq"] == 125.0
+    assert forwarded["lambda2"] == 1.0 / 4.0
+    assert forwarded["chunk_seconds"] == 5.0
 
 
 def test_cli_batch_resolves_minus_one_without_individual_fallback(

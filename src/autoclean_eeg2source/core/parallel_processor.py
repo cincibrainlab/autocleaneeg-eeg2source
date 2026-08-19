@@ -21,21 +21,30 @@ logger = logging.getLogger(__name__)
 
 
 # Helper function at module level for multiprocessing
-def _process_batch_helper(file_path, output_dir):
-    """Helper function for batch processing to avoid pickling issues."""
+def _process_batch_helper(file_path, output_dir, montage, resample_freq, lambda2, chunk_seconds):
+    """Helper function for batch processing to avoid pickling issues.
+
+    Receives the batch owner's actual montage/resample_freq/lambda2/
+    chunk_seconds so per-file worker processes honor the caller's
+    configuration instead of silently reverting to class defaults.
+    ``n_jobs`` stays pinned to 1 here intentionally: file-level parallelism
+    is already provided by process_batch's outer ProcessPoolExecutor, so
+    each per-file worker must not itself spawn a nested worker pool.
+    """
     try:
         # Create a new processor for this process to avoid shared state issues
         from .memory_manager import MemoryManager
         from .parallel_processor import ParallelProcessor
-        
+
         processor = ParallelProcessor(
             memory_manager=MemoryManager(),  # Create a new memory manager
-            montage="GSN-HydroCel-129",      # Use default montage
-            resample_freq=250,               # Use default resample frequency
-            lambda2=1.0/9.0,                 # Use default lambda2
+            montage=montage,
+            resample_freq=resample_freq,
+            lambda2=lambda2,
             n_jobs=1,                        # Use single thread within each file process
             batch_size=4,                    # Use default batch size
-            parallel_method='processes'       # Use default parallel method
+            parallel_method='processes',      # Use default parallel method
+            chunk_seconds=chunk_seconds,
         )
         return processor.process_file(file_path, output_dir)
     except Exception as e:
@@ -450,8 +459,17 @@ class ParallelProcessor(SequentialProcessor):
             raise ValueError("max_workers must be -1 or a positive integer")
         
         # For process-based parallelism, we need to pass both file_path and output_dir
-        # Use module-level helper function with output_dir
-        process_func = partial(_process_batch_helper, output_dir=output_dir)
+        # Use module-level helper function with output_dir, plus this processor's
+        # actual montage/resample_freq/lambda2/chunk_seconds so batch workers do
+        # not silently fall back to class defaults.
+        process_func = partial(
+            _process_batch_helper,
+            output_dir=output_dir,
+            montage=self.montage,
+            resample_freq=self.resample_freq,
+            lambda2=self.lambda2,
+            chunk_seconds=self.chunk_seconds,
+        )
         
         # Process files in parallel using module-level function
         results = []
