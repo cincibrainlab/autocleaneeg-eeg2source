@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "autocleaneeg-eeg2source"
-version = "0.3.7"
+version = "0.4.0"
 description = "EEG source localization with DK atlas regions"
 readme = "README.md"
 requires-python = ">=3.9,<3.13"
@@ -25,7 +25,7 @@ classifiers = [
 dependencies = [
     "mne",
     "numpy>1.24.4",
-    "pandas",
+    "pandas>=2.2.2",
     "loguru",
     "psutil",
     "nibabel",

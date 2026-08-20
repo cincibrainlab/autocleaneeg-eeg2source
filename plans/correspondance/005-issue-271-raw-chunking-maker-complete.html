@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>005 — Raw chunking maker complete</title></head>
+<body>
+  <h1>Correspondence 005: Bounded sequential Raw chunking maker implementation complete</h1>
+  <dl>
+    <dt>From</dt><dd>Echo — Software Engineer</dd>
+    <dt>To</dt><dd>Raven — Engineering Delivery and Loop Coordinator</dd>
+    <dt>Date</dt><dd>2026-08-17 (America/New_York)</dd>
+    <dt>Re</dt><dd>Issue #271 upstream Raw source-localization memory boundary</dd>
+    <dt>Correspondence number</dt><dd>005</dd>
+    <dt>Source thread ID</dt><dd>01a010a6-ecbb-74e1-938e-dc426c2bb9dd</dd>
+    <dt>Local work thread ID</dt><dd>T-2026-08-17-003</dd>
+    <dt>Role thread</dt><dd>Echo standing project role (current task)</dd>
+    <dt>Status</dt><dd>Maker complete; independent verification pending</dd>
+    <dt>Record type</dt><dd>PI-authorized implementation and verification handoff</dd>
+  </dl>
+
+  <h2>Request Summary</h2>
+  <p>After exact legacy 0.3.7 provenance and environment repair, Raven directed Echo to complete a characterization-first implementation of bounded sequential Raw source localization. Required boundaries were immediate ROI/label reduction, final partial chunk, ordered concatenation, one-chunk-live cleanup, strict finite positive bounded <code>chunk_seconds</code>, worker default 1 without nested all-core defaults, unchanged Epochs routing, no process-global BLAS mutation, and an explicit API capability signal. Wave supplied <code>rtol=1e-10</code>/<code>atol=1e-15</code> and exact sample-order/settings criteria; annotation/<code>first_samp</code> behavior remained unproven. Cipher supplied validation, cleanup, concurrency, RSS/output, and API boundaries. No commit, push, release, publication, or downstream edit was authorized.</p>
+
+  <h2>Ownership and Preservation</h2>
+  <p>Echo was the sole code editor for this continuation. Raven remained integration owner. Echo preserved all prior correspondence, the authoritative sdist, extracted provenance material, and other agents' artifacts. The extensive sync-generated <code>uv.lock</code> metadata/line-ending diff predates this feature continuation; Echo did not edit or attribute it to the feature.</p>
+
+  <h2>Characterization-First Evidence</h2>
+  <p>Using <code>PYTHONPATH</code> to select the immutable extracted legacy 0.3.7 source mapped to commit <code>22545f4f394562a98db400b1bf6212dfde2f4d52</code>, Echo ran two exact tests before source repair:</p>
+  <ul>
+    <li><code>.venv\Scripts\python.exe -B -m pytest tests\test_raw_chunking.py::test_raw_pipeline_reduces_and_releases_each_stc_before_next_chunk -q --maxfail=1 --no-cov -p no:cacheprovider</code> — expected failure, 1 failed in 0.93 seconds; baseline constructor rejected unknown <code>chunk_seconds</code>.</li>
+    <li><code>.venv\Scripts\python.exe -B -m pytest tests\test_raw_chunking.py::test_chunked_result_matches_locked_whole_raw_oracle -q --maxfail=1 --no-cov -p no:cacheprovider</code> — expected failure, 1 failed in 0.91 seconds for the same absent capability.</li>
+  </ul>
+  <p>The current dirty candidate also failed the new strict validation characterization at <code>None</code> because it silently accepted the value. This established the correction boundary before implementation repair.</p>
+
+  <h2>Execution Update</h2>
+  <ul>
+    <li>Added <code>MAX_RAW_CHUNK_SECONDS = 3600.0</code> and strict type, finiteness, positive, and upper-bound validation. <code>None</code>, booleans, zero, negatives, NaN, infinities, and values above 3600 are rejected; zero is not silently treated as compatible.</li>
+    <li>Raw data is divided into ordered half-open sample intervals with an exact final partial chunk. Each chunk reuses the same inverse operator and unchanged <code>lambda2</code>, <code>MNE</code> method, normal orientation, labels, source space, and mean ROI reduction settings.</li>
+    <li>Each source estimate is reduced immediately to label time courses, released in <code>finally</code>, garbage-collected, and followed by memory-manager cleanup before the next source estimate is created. Compact label chunks are concatenated on the time axis in order.</li>
+    <li>Raw output now carries <code>first_samp</code> and copies annotations through MNE's normal synchronization semantics. The test covers <code>orig_time=None</code>; non-null <code>orig_time</code> remains a declared gap.</li>
+    <li><code>ParallelProcessor</code>, <code>CachedProcessor</code>, <code>GPUProcessor</code>, both CLI surfaces, and <code>run_standard_benchmark</code> now default to one worker. Non-positive or non-integer parallel constructor values are rejected rather than expanded to all cores.</li>
+    <li>Exported <code>RAW_CHUNKING_CAPABILITY = "sequential-raw-chunking-v1"</code>. The distribution version remains 0.3.7 because release/version publication was not authorized.</li>
+    <li>No BLAS, OpenMP, process environment, or threadpool global setting was added or mutated.</li>
+    <li>Epochs routing remains on <code>apply_inverse_epochs</code> and the established Epochs conversion method; an exact regression test proves the Raw chunk method is not called.</li>
+  </ul>
+
+  <h2>Diff Summary</h2>
+  <p>Relative to HEAD, seven tracked source files now contain 208 insertions and 90 deletions. Most of that tracked delta includes the quarantined candidate that Echo repaired rather than a clean-from-HEAD incremental patch. The untracked focused test file contains 286 lines and SHA-256 <code>6e85f492b50084afd48136a62e3fae7f53efa84754021e1a8f54f23ea3011005</code>. Modified feature files are package <code>__init__.py</code>, CLI, sequential converter, parallel/GPU/robust processors, benchmarking helper, and <code>tests/test_raw_chunking.py</code>. <code>uv.lock</code> is explicitly excluded from the feature diff/custody.</p>
+
+  <h2>Exact After-Repair Verification</h2>
+  <ul>
+    <li>Strict validation exact node — 7 passed in 0.73 seconds.</li>
+    <li>Locked whole-Raw oracle exact node — initial harness-only failure because the direct oracle call omitted asserted scientific kwargs; corrected without product change, then 1 passed in 1.10 seconds at <code>rtol=1e-10</code>/<code>atol=1e-15</code>.</li>
+    <li>One-chunk-live allocation/order exact node — 1 passed in 1.93 seconds.</li>
+    <li>Injected reduction-failure cleanup exact node — 1 passed in 0.89 seconds.</li>
+    <li>First-sample/annotation exact node — fixture was corrected to MNE relative-onset semantics, then 1 passed in 0.74 seconds.</li>
+    <li>Epochs routing exact node — 1 passed in 0.85 seconds.</li>
+    <li>Conservative worker/API exact node — 1 passed in 0.75 seconds.</li>
+    <li>Final <code>tests/test_raw_chunking.py</code> — 16 passed in 2.02 seconds.</li>
+    <li>Final existing <code>tests/test_robust_processor.py</code> — 5 passed in 0.83 seconds.</li>
+    <li>Named-file <code>py_compile</code> — exit 0.</li>
+    <li><code>git diff --check -- src/autoclean_eeg2source</code> — exit 0; only expected Windows line-ending warnings.</li>
+    <li>Search for <code>OPENBLAS</code>, <code>MKL_NUM_THREADS</code>, <code>OMP_NUM_THREADS</code>, <code>os.environ</code>, and <code>threadpool_limits</code> under source/tests — no match.</li>
+    <li>Black check could not run because Black is not installed in the repaired venv; no formatter was downloaded or installed.</li>
+  </ul>
+
+  <h2>Scope Limits and Known Gaps</h2>
+  <p>No real EEG data, production path, process-level peak-RSS smoke, non-null annotation <code>orig_time</code> case, package build/install smoke, CLI subprocess smoke, full suite, independent QA, or senior review was completed. The oracle uses deterministic synthetic/mocked inverse and label reduction to lock settings, order, and numerical concatenation; it is not a scientific result. No release version was selected or published. No downstream AutoClean change was made.</p>
+
+  <h2>Conflict Status</h2>
+  <p><strong>Flag:</strong> earlier provenance and Python ABI blockers prevented test-first work. <strong>Respond:</strong> Raven supplied the artifact and repaired venv; Echo verified both gates. <strong>Decide:</strong> resume implementation under the approved Wave/Cipher boundaries. <strong>Document:</strong> correspondence 003/004 preserve the blockers and this record preserves the completed maker outcome. No unresolved implementation conflict is known; verification/release custody remains open.</p>
+
+  <h2>Execution Decision or Update</h2>
+  <p><strong>Disposition:</strong> modify and accept as maker-complete candidate, not release-ready approval. <strong>Owner:</strong> Echo completed maker work; Raven owns integration and PI-facing disposition. <strong>Rationale:</strong> focused characterization and regressions pass with the requested safety boundaries. <strong>Remaining PI/Raven gates:</strong> independent QA, senior diff review, decision on RSS/build/CLI gaps, dependency-lock custody, commit/push, release versioning, package publication, and downstream consumption.</p>
+
+  <h2>Verification and Custody</h2>
+  <p><strong>Checker:</strong> Echo performed maker-side checks only; no independent checker was contacted in this task. <strong>Outcome:</strong> focused maker checks pass; formatter unavailable; declared integration gaps remain. <strong>Custody:</strong> Raven should route Cricket/The Boulder or other approved independent verification without silent edits. Any review-driven code change should return to the assigned maker/integration path.</p>
+
+  <h2>Next Actions</h2>
+  <ol>
+    <li><strong>Raven:</strong> route independent QA against this exact checkout; stop if another editor changes the candidate before custody is recorded.</li>
+    <li><strong>Independent QA:</strong> rerun exact focused nodes and assess whether bounded RSS, CLI/build smoke, and annotation <code>orig_time</code> require additional tests; expected artifact is a separate correspondence record.</li>
+    <li><strong>Senior reviewer:</strong> inspect the exact diff, especially MNE sample/annotation semantics, concurrency defaults, error cleanup, and public API compatibility.</li>
+    <li><strong>Raven/PI:</strong> decide lockfile handling and any future version/release/publish/downstream actions. None are implied by this maker completion.</li>
+  </ol>
+
+  <h2>Publication Boundary</h2>
+  <p><strong>Sensitivity:</strong> internal engineering execution record. <strong>Redactions:</strong> none required. <strong>Synthetic versus real:</strong> all behavior tests used synthetic/mocked data; no patient or production EEG was accessed. <strong>Safety warning:</strong> do not publish this correspondence, code, package, or extracted provenance workspace; do not represent the candidate as independently verified, released, shipped, or downstream-integrated.</p>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Correspondence 010 — Batch sentinel fix</title></head>
+<body>
+<h1>Correspondence 010 — Issue 271 batch sentinel fix</h1>
+<dl>
+  <dt>From</dt><dd>Echo — Software Engineer</dd>
+  <dt>To</dt><dd>Raven — Engineering Delivery and Loop Coordinator</dd>
+  <dt>Date</dt><dd>2026-08-17</dd>
+  <dt>Re</dt><dd>Final narrow correction for CLI batch <code>n_jobs=-1</code></dd>
+  <dt>Source thread</dt><dd>01a010a6-ecbb-74e1-938e-dc426c2bb9dd</dd>
+  <dt>Local work thread</dt><dd>T-2026-08-17-003</dd>
+  <dt>Status</dt><dd>Implementation complete; maker-verified; independent acceptance remains with Raven/reviewer</dd>
+  <dt>Record type</dt><dd>Execution update</dd>
+</dl>
+
+<h2>Request Summary</h2>
+<p>PI-authorized revision routed by Raven after Boulder 009 identified a P1 defect: the CLI forwarded the legacy <code>-1</code> all-core sentinel directly to <code>ProcessPoolExecutor</code>, which rejects it and caused the CLI to enter its individual-file fallback. Desired outcome was positive worker resolution at the CLI/batch boundary with no change to source-inverse worker count. Non-goals were broader refactoring, dependency changes, publication, commit, push, release, and downstream AutoClean changes. Echo retained sole code-edit ownership for this pass.</p>
+
+<h2>Execution Update</h2>
+<p>Added characterization tests before production edits. The first run failed with executor <code>max_workers=-1</code> while <code>processor.n_jobs=14</code>. The batch API now maps <code>None</code> and <code>-1</code> to the processor's resolved positive worker count and rejects booleans, non-integers, zero, and other negative values. The CLI now passes <code>processor.n_jobs</code> when the user explicitly requests <code>-1</code>. CLI help documents that legacy sentinel. Source forward/inverse work remains fixed at <code>n_jobs=1</code>.</p>
+
+<h2>Scope Limits</h2>
+<p>No full repository test suite, real EEG dataset, production RSS benchmark, multiprocessing integration workload, downstream package, dependency specification, or publication system was exercised. The regenerated <code>uv.lock</code> diff and pre-existing candidate edits were preserved and not attributed to this narrow pass.</p>
+
+<h2>Evidence</h2>
+<ul>
+  <li>Checkout: <code>C:\Users\SYEX8X\Documents\GitHub\autocleaneeg-eeg2source</code>; branch <code>codex/271-high-concurrency-source-localization</code>; HEAD <code>0f1c07e26421475be218328ed718ddb997e327b0</code>.</li>
+  <li>Authoritative sdist: <code>working_assets/autoclean_eeg2source-0.3.7.tar.gz</code>; SHA256 <code>65f9d27d93675c71da1e40ce6b00e7da915af475be6d14ef7d87c29b96d3dbb4</code>.</li>
+  <li>Failing characterization command: <code>.venv\Scripts\python.exe -B -m pytest tests/test_raw_chunking.py::test_process_batch_resolves_legacy_all_core_sentinel tests/test_raw_chunking.py::test_cli_batch_resolves_minus_one_without_individual_fallback -q --maxfail=1 --no-cov -p no:cacheprovider</code>. Before fix: 1 failed; observed <code>-1 == 14</code> assertion failure.</li>
+  <li>Same exact command after fix: 2 passed in 1.36s.</li>
+  <li>Raw/API suite: <code>.venv\Scripts\python.exe -B -m pytest tests/test_raw_chunking.py -q --maxfail=1 --no-cov -p no:cacheprovider</code>: 27 passed in 1.90s.</li>
+  <li>Robust suite: <code>.venv\Scripts\python.exe -B -m pytest tests/test_robust_processor.py -q --maxfail=1 --no-cov -p no:cacheprovider</code>: 5 passed in 0.82s.</li>
+  <li>AST parsing passed for CLI, parallel processor, and Raw/API test module. <code>git diff --check</code> passed with only existing line-ending warnings.</li>
+</ul>
+
+<h2>Conflict Status</h2>
+<p>Flag/Respond/Decide/Document: Boulder 009's P1 was flagged, accepted by Raven, corrected by Echo, and documented here. No unresolved implementation conflict is known.</p>
+
+<h2>Execution Decision</h2>
+<p>Disposition: accept the smallest boundary normalization plus two regressions. Owner: Echo for implementation; Raven and independent reviewer retain acceptance custody. Rationale: preserves explicit legacy all-core outer concurrency without permitting an invalid executor value or introducing nested all-core inverse execution.</p>
+
+<h2>Verification</h2>
+<p>Checker identity: Echo (maker). Outcome: all requested focused checks passed. Known gaps: no real multiprocessing/RSS workload and no full suite; these remain release evidence gaps, not silently inferred successes. Independent review is not claimed by this artifact.</p>
+
+<h2>Next Actions</h2>
+<p>Raven should route an independent final review of the narrow diff and decide whether the candidate is acceptable. Stop condition: any regression showing a non-positive executor worker count, individual fallback for valid <code>-1</code>, or inverse <code>n_jobs</code> other than 1. Expected artifact: reviewer correspondence. Human handoff remains required for any commit, push, release, or publication.</p>
+
+<h2>Publication Boundary</h2>
+<p>Sensitivity: internal engineering record, safe for archive only after Raven's completeness and publication review. Evidence is synthetic; no participant or clinical EEG data is present. Not published. This record does not authorize release and must not be represented as shipped.</p>
+</body>
+</html>

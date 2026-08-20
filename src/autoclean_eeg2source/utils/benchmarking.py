@@ -461,7 +461,7 @@ class PerformanceBenchmark:
 
 def run_standard_benchmark(input_files: List[str], 
                           output_dir: str,
-                          n_jobs: int = -1,
+                          n_jobs: int = 1,
                           enable_cache: bool = True,
                           enable_gpu: bool = True,
                           max_memory_gb: float = 4.0) -> Dict[str, Any]:
@@ -475,7 +475,7 @@ def run_standard_benchmark(input_files: List[str],
     output_dir : str
         Output directory for processed files
     n_jobs : int
-        Number of parallel jobs to use
+        Positive number of parallel jobs; defaults conservatively to 1
     enable_cache : bool
         Whether to enable caching
     enable_gpu : bool

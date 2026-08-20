@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>011 — Issue 271 Cricket final sentinel retest</title></head>
+<body>
+  <h1>Correspondence 011: Final batch sentinel independent retest</h1>
+  <dl>
+    <dt>From</dt><dd>Cricket — Junior Implementation QA Engineer</dd>
+    <dt>To</dt><dd>Raven — Engineering Delivery and Loop Coordinator</dd>
+    <dt>Date</dt><dd>2026-08-17 (America/New_York)</dd>
+    <dt>Re</dt><dd>Issue #271 Echo revision 010 final <code>n_jobs=-1</code> batch sentinel retest</dd>
+    <dt>Correspondence number</dt><dd>011</dd>
+    <dt>Source thread ID</dt><dd>01a010a6-ecbb-74e1-938e-dc426c2bb9dd</dd>
+    <dt>Local work thread ID</dt><dd>T-2026-08-17-003</dd>
+    <dt>Role thread</dt><dd>Cricket standing project role (current task)</dd>
+    <dt>Status</dt><dd>Independent final sentinel QA passed; no silent fallback observed</dd>
+    <dt>Record type</dt><dd>PI-authorized read-only independent regression retest</dd>
+  </dl>
+
+  <h2>Request Summary</h2>
+  <p>Raven routed Cricket to retest the frozen candidate after Echo revision 010. Required checks were the two new <code>n_jobs=-1</code> batch regressions, the updated 27-case focused suite, the five-case robust suite, positive resolved outer-worker forwarding from CLI, <code>process_batch</code> normalization of <code>None</code>/<code>-1</code>, invalid-value rejection, source/inverse <code>n_jobs=1</code>, and absence of silent individual-file fallback.</p>
+  <p><strong>Desired outcome:</strong> independent final pass/fail evidence for the batch sentinel correction. <strong>Non-goals:</strong> implementation edits, broader refactoring, real EEG/RSS work, commit, push, merge, release, or publication. <strong>Constraints:</strong> frozen read-only candidate; Cricket may add only this correspondence. <strong>Approval state:</strong> Raven states this final retest is PI-authorized.</p>
+
+  <h2>Execution Update</h2>
+  <p>The checkout remained on <code>codex/271-high-concurrency-source-localization</code> at HEAD <code>0f1c07e26421475be218328ed718ddb997e327b0</code>, with the known uncommitted feature diff and out-of-custody <code>uv.lock</code> change preserved. Cricket read correspondence 010, the two new tests, and the exact CLI/batch implementation before execution. No source, test, lockfile, or prior artifact was edited.</p>
+  <p>The two exact sentinel regressions passed, followed by 27/27 focused tests and 5/5 robust tests. A separate no-write executor probe confirmed that <code>None</code> and <code>-1</code> each reached the executor as the processor's resolved positive count of 14, explicit positive 3 remained 3, and booleans, zero, other negatives, non-integer floats, and strings were rejected with <code>ValueError</code>. No tested invalid value was silently accepted.</p>
+  <p>The CLI regression asserts that user <code>n_jobs=-1</code> is forwarded to <code>process_batch</code> as the resolved processor count and that <code>_process_individual_file</code> is not called. The separate source/inverse regression rerun passed all four cases: Parallel forward work and CuPy, PyTorch, and TensorFlow GPU inverse fallbacks remained fixed at <code>n_jobs=1</code> while outer workers resolved to all available cores.</p>
+
+  <h2>Exact Command Evidence</h2>
+  <ul>
+    <li><code>git status --short; git branch --show-current; git rev-parse HEAD; Get-ChildItem plans\correspondance ...; rg ...</code>, repository root, 1.7 seconds, exit 0: confirmed frozen state, branch/HEAD, Boulder 009 finding, Echo 010 response, and the 27-test inventory.</li>
+    <li><code>Get-Content -Raw plans\correspondance\010-issue-271-batch-sentinel-fix.html</code> plus relevant test/source slices and <code>git diff --stat</code>, 1.4 seconds, exit 0: inspected the normalization, CLI forwarding, no-fallback assertion, and seven-file feature delta.</li>
+    <li><code>.venv\Scripts\python.exe -B -m pytest tests\test_raw_chunking.py::test_process_batch_resolves_legacy_all_core_sentinel tests\test_raw_chunking.py::test_cli_batch_resolves_minus_one_without_individual_fallback -vv --maxfail=1 --no-cov -p no:cacheprovider</code>, 4.58 seconds wall time, exit 0: two collected, two passed in 0.93 seconds.</li>
+    <li><code>.venv\Scripts\python.exe -B -m pytest tests\test_raw_chunking.py -q --maxfail=1 --no-cov -p no:cacheprovider</code>, 6.13 seconds wall time, exit 0: 27 collected, 27 passed in 1.95 seconds.</li>
+    <li><code>.venv\Scripts\python.exe -B -m pytest tests\test_robust_processor.py -q --maxfail=1 --no-cov -p no:cacheprovider</code>, 5.40 seconds wall time, exit 0: five collected, five passed in 0.85 seconds.</li>
+    <li>No-write synthetic executor probe through project-local Python, 5.11 seconds wall time, exit 0: <code>None -&gt; 14</code>, <code>-1 -&gt; 14</code>, <code>3 -&gt; 3</code>; <code>True</code>, <code>False</code>, <code>0</code>, <code>-2</code>, <code>1.5</code>, and <code>"3"</code> each raised <code>ValueError</code>; processor and host CPU count were both 14.</li>
+    <li><code>.venv\Scripts\python.exe -B -m pytest tests\test_raw_chunking.py::test_explicit_legacy_all_core_workers_do_not_reach_forward_inverse tests\test_raw_chunking.py::test_gpu_fallback_inverse_is_single_worker -vv --maxfail=1 --no-cov -p no:cacheprovider</code>, 4.59 seconds wall time, exit 0: four collected, four passed in 0.81 seconds; forward plus all three GPU fallback inverse paths received one worker.</li>
+    <li><code>.venv\Scripts\python.exe -B -m autoclean_eeg2source.cli process --help</code> followed by <code>git diff --check -- src/autoclean_eeg2source tests/test_raw_chunking.py</code> and <code>git status --short</code>, 4.58 seconds wall time, exit 0: help documents <code>-1 for all available cores; default: 1</code>; diff check found no whitespace errors, only existing Windows line-ending warnings; frozen inventory remained unchanged except this later QA artifact.</li>
+  </ul>
+
+  <h2>Acceptance Matrix Result</h2>
+  <ul>
+    <li><strong>CLI resolved positive outer count:</strong> pass; valid <code>--n-jobs -1 --batch-processing</code> passes <code>processor.n_jobs</code> rather than literal <code>-1</code>.</li>
+    <li><strong>Batch normalization:</strong> pass; <code>None</code> and <code>-1</code> normalize to the resolved positive processor count, while explicit positive values pass through unchanged.</li>
+    <li><strong>Invalid batch controls:</strong> pass; tested booleans, zero, values below <code>-1</code>, non-integral numbers, and strings are rejected before executor construction.</li>
+    <li><strong>No silent fallback:</strong> pass; the CLI regression completes successfully through batch processing and asserts the individual fallback was never called.</li>
+    <li><strong>Source/inverse concurrency boundary:</strong> pass; outer <code>-1</code> remains compatible while forward and GPU fallback inverse calls remain <code>n_jobs=1</code>.</li>
+    <li><strong>Regression suites:</strong> pass; 27 focused and five robust cases are green.</li>
+  </ul>
+
+  <h2>Scope Limits</h2>
+  <p>No real multiprocessing file workload, real EEG, real inverse, fsaverage download, production RSS benchmark, package build/install, EEGLAB round trip, full repository suite, CI, downstream integration, commit, push, merge, release, publication, or archive deployment was performed. The executor and CLI regressions use mocks to prove boundary values and fallback behavior; they do not measure throughput or process peak RSS. Those remain separate release-evidence questions for Raven/PI and are not inferred as successes.</p>
+
+  <h2>Conflict Status</h2>
+  <p><strong>Flag:</strong> Boulder 009 proved literal <code>-1</code> reached <code>ProcessPoolExecutor</code> and triggered CLI fallback. <strong>Respond:</strong> Raven routed the defect and Echo revision 010 normalized the public boundary. <strong>Decide:</strong> the final independent sentinel matrix now passes; final integration/release authority remains with Raven/PI. <strong>Document:</strong> Boulder 009 preserves the failure, Echo 010 preserves the maker response, and this 011 preserves independent verification. No new conflict was found.</p>
+
+  <h2>Execution Decision or Update</h2>
+  <p><strong>Disposition:</strong> accept Echo 010 for the requested final batch-sentinel implementation QA boundary. <strong>Owner:</strong> Raven retains integration and PI-facing custody. <strong>Rationale:</strong> exact regressions, expanded suites, invalid-control probing, inverse-worker checks, CLI help, and diff validation all pass without fallback. <strong>Remaining PI gate:</strong> all commit, merge, release, publication, version, lockfile, RSS, and broader release-evidence decisions.</p>
+
+  <h2>Verification and Custody</h2>
+  <p><strong>Checker:</strong> Cricket, independent from maker Echo. <strong>Outcome:</strong> passed; no defect found in the final sentinel acceptance scope. <strong>Known gaps:</strong> real multiprocessing/RSS and broader release evidence were not requested as success criteria here. <strong>Custody:</strong> frozen source/tests remain with Raven/Echo; Cricket created only this correspondence and grants no final merge or release approval.</p>
+
+  <h2>Next Actions</h2>
+  <ol>
+    <li><strong>Raven:</strong> reconcile this independent pass with remaining senior/PI gates; stop condition is a documented integration disposition.</li>
+    <li><strong>Raven/PI:</strong> decide whether any real-workload, full-suite, build, version, lockfile, RSS, or round-trip evidence is required before Git/release action.</li>
+    <li><strong>Authorized checker, only if routed:</strong> execute any additional bounded release-evidence job and issue a separate artifact; do not use production EEG or paths without explicit scope.</li>
+  </ol>
+
+  <h2>Publication Boundary</h2>
+  <p><strong>Sensitivity:</strong> internal engineering QA record; safe synthetic evidence only. <strong>Redactions:</strong> none required. <strong>Synthetic versus real:</strong> tests and probes used mocks/synthetic objects; no patient, real, clinical, or production EEG data was accessed. <strong>Safety warning:</strong> withhold from public archive until Raven reviews and explicitly routes publication; do not represent the feature as committed, merged, released, shipped, or downstream-integrated.</p>
+</body>
+</html>

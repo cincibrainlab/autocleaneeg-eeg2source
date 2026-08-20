@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>001 — Issue 271 upstream intake and proof plan</title>
+  <style>
+    body { max-width: 980px; margin: 2rem auto; padding: 0 1rem; font: 16px/1.55 system-ui, sans-serif; color: #17202a; }
+    h1, h2 { line-height: 1.2; } table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccd1d1; padding: .5rem; text-align: left; vertical-align: top; }
+    code { background: #f4f6f7; padding: .1rem .25rem; } .warning { border-left: .3rem solid #b9770e; padding-left: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Correspondence 001: Issue #271 upstream intake and exact-version proof plan</h1>
+  <p class="warning"><strong>Status:</strong> planning accepted; implementation blocked at PI gate. This record does not approve or verify the pre-existing dirty candidate.</p>
+  <table>
+    <tr><th>From</th><td>Raven — Engineering Delivery and Loop Coordinator, autocleaneeg-eeg2source</td></tr>
+    <tr><th>To</th><td>PI; Raven — Engineering Delivery and Loop Coordinator, autocleaneeg_pipeline</td></tr>
+    <tr><th>Date</th><td>2026-08-17 (America/New_York)</td></tr>
+    <tr><th>Re</th><td>First upstream fix required by autocleaneeg_pipeline issue #271</td></tr>
+    <tr><th>Record type</th><td>Cross-project intake, readiness assessment, and proposed assignment</td></tr>
+    <tr><th>Source thread</th><td>019f42de-12c8-7681-b931-f19e15bdde8d</td></tr>
+    <tr><th>Sending task</th><td>01a00fb9-6e6c-7e23-a088-d7240bb721c6</td></tr>
+    <tr><th>Destination task</th><td>01a010a6-ecbb-74e1-938e-dc426c2bb9dd</td></tr>
+    <tr><th>Local work thread</th><td>T-2026-08-17-003</td></tr>
+  </table>
+
+  <h2>Request Summary</h2>
+  <p>The PI-originated handoff requests an upstream-first, memory-safe Raw source-localization plan: prove the behavior of the exact published 0.3.7 baseline, preserve its numerical result as an oracle, then implement bounded sequential Raw chunks that reuse the inverse operator and scientific settings, reduce each chunk immediately to compact label/ROI output, and concatenate in time order.</p>
+  <p><strong>Desired outcome:</strong> a tested, explicit upstream capability/version that downstream AutoClean can safely consume. <strong>Non-goals:</strong> no generalized scheduler, wrapper-side inverse engine, changed scientific defaults, speculative dependency, silent reinterpretation of legacy <code>n_jobs</code>, production writes, or path/output redesign.</p>
+  <p><strong>Approval state:</strong> intake, planning, and an assignment proposal are approved. Implementation, branch creation, commits, pushes, release, package publication, and downstream integration are not approved.</p>
+
+  <h2>Execution Update and Readiness Assessment</h2>
+  <p>The repository identity gate passes: the checkout root is <code>C:/Users/SYEX8X/Documents/GitHub/autocleaneeg-eeg2source</code>, remote <code>origin</code> is <code>https://github.com/cincibrainlab/autocleaneeg-eeg2source.git</code>, and both <code>pyproject.toml</code> and the package <code>__init__.py</code> declare version 0.3.7.</p>
+  <p>Readiness remains conditional. HEAD <code>0f1c07e26421475be218328ed718ddb997e327b0</code> equals local and remote <code>main</code>, but no 0.3.7 tag exists in the checkout. Therefore an immutable mapping from the published 0.3.7 artifact to this Git tree is not yet proven.</p>
+  <p>The saved checkout is already on <code>codex/271-high-concurrency-source-localization</code> with five modified source files and an untracked <code>tests/test_raw_chunking.py</code>. These changes predate this intake. Their author, approval, verification, and relationship to the published wheel are unknown, so they are quarantined as an unverified candidate: no edit, staging, test, or attribution was performed during intake.</p>
+
+  <h2>Proposed Assignment</h2>
+  <ol>
+    <li><strong>Echo (maker), only after PI approval and fresh project-scoped standing-thread lookup:</strong> preserve the current dirty state, establish an exact clean 0.3.7 oracle without creating a worktree, add the failing allocation-boundary characterization, and implement only the smallest bounded sequential Raw-chunk path. Raven is integration owner.</li>
+    <li><strong>Wave (sequential scientific consultation):</strong> confirm equivalence criteria, time/annotation semantics, and a justified numerical tolerance; advice only, no final scientific decision.</li>
+    <li><strong>Cipher (sequential resource/security consultation):</strong> check validation, worker-budget, BLAS initialization, cleanup, and safe RSS-smoke boundaries; advice only.</li>
+    <li><strong>Cricket (independent QA after maker completion):</strong> run the focused acceptance matrix against the exact candidate without editing it.</li>
+    <li><strong>The Boulder (independent final diff review):</strong> assess code and release readiness after QA; no merge authority.</li>
+  </ol>
+  <p>No worker was contacted or assigned during this planning record. Role-thread IDs must be freshly resolved within this project before any message is sent.</p>
+
+  <h2>Exact-Version Proof Gate</h2>
+  <ol>
+    <li>Obtain the published <code>autoclean-eeg2source==0.3.7</code> wheel/sdist metadata and hashes from the authoritative release channel.</li>
+    <li>Compare its source payload and version metadata to a clean Git tree/commit; document all packaging-only differences. Do not use the current dirty files as the baseline.</li>
+    <li>On that exact baseline, add a failing characterization showing a multi-chunk Raw reaches one whole-recording <code>apply_inverse_raw</code> call and label/ROI reduction follows it.</li>
+    <li>Capture the unchunked label/ROI output, sample count, metadata, timing, annotations, and scientific settings as the oracle.</li>
+    <li>Only then assess or replace the pre-existing dirty candidate. If the artifact cannot be mapped exactly, stop and request the PI's explicit choice of replacement baseline.</li>
+  </ol>
+
+  <h2>Required Verification</h2>
+  <ul>
+    <li>Chunk boundaries, final partial chunk, exact sample/output length, concatenation order, and one-chunk-live allocation lifetime.</li>
+    <li>Numerical equivalence to the locked unchunked oracle within a Wave-reviewed, explicitly justified tolerance.</li>
+    <li>Metadata, annotations, first-sample/time alignment, and unchanged Epochs behavior.</li>
+    <li>Bounded peak-RSS smoke test using synthetic/local data only, with no production paths or outputs.</li>
+    <li>Finite, positive, bounded <code>chunk_seconds</code> validation; invalid types, NaN, infinity, zero, negatives, and excessive values have explicit behavior.</li>
+    <li>Cleanup on success and injected failure; no retained STC list or other all-chunk allocation.</li>
+    <li>Source-localization workers default to 1; no default of 40; conservative total-concurrency behavior and no silent legacy <code>n_jobs</code> reinterpretation.</li>
+    <li>No process-global BLAS mutation after NumPy/SciPy/MNE import; BLAS initialization boundary documented and tested where practical.</li>
+    <li>CLI/library API compatibility, explicit capability/version signal, package build/install smoke, and downstream integration remaining blocked until release publication is verified.</li>
+  </ul>
+
+  <h2>Dependencies and Blockers</h2>
+  <ul>
+    <li>PI approval for the proposed assignments and proof/implementation phase.</li>
+    <li>Fresh project-scoped lookup of standing Echo, Wave, Cipher, Cricket, and Boulder role tasks.</li>
+    <li>Authoritative access to the published 0.3.7 artifact and metadata.</li>
+    <li>Decision on custody of the existing dirty candidate: preserve and inspect in place, or have its current owner identify provenance. No cleanup/reset is authorized.</li>
+    <li>A safe clean-baseline method compatible with the direct-checkout/no-worktree constraint; branch creation remains separately gated.</li>
+  </ul>
+
+  <h2>Scope Limits</h2>
+  <p>This intake did not read the external AutoClean correspondence files, contact specialists, inspect every dirty hunk, execute tests, install/download artifacts, modify code, create a branch/worktree, stage/commit/push, publish a package, alter downstream AutoClean, or decide scientific tolerance or release acceptance.</p>
+
+  <h2>Evidence</h2>
+  <ul>
+    <li><code>git rev-parse --show-toplevel</code> → expected project root.</li>
+    <li><code>git remote -v</code> → expected cincibrainlab repository.</li>
+    <li><code>git branch --show-current</code> → <code>codex/271-high-concurrency-source-localization</code>.</li>
+    <li><code>git rev-parse HEAD</code> → <code>0f1c07e26421475be218328ed718ddb997e327b0</code>.</li>
+    <li><code>git log -8 --oneline --decorate</code> → HEAD also points to <code>main</code> and <code>origin/main</code>.</li>
+    <li><code>git tag --list</code> → only <code>cli-enhancements-v1.0</code>; no 0.3.7 tag.</li>
+    <li><code>git status --short --branch</code> and <code>git diff --stat</code> → five modified source files, 174 insertions/72 deletions, plus one untracked test.</li>
+    <li><strong>Inference:</strong> declared version equality is insufficient to prove byte/source identity with the published artifact.</li>
+  </ul>
+
+  <h2>Conflict Status</h2>
+  <p><strong>Flag:</strong> the handoff expected proof-first planning, while the direct checkout already contains an implementation-shaped dirty candidate. <strong>Respond:</strong> intake quarantines it without judgment or mutation. <strong>Decide:</strong> pending PI approval and provenance clarification. <strong>Document:</strong> this record preserves the observed boundary.</p>
+
+  <h2>Execution Decision</h2>
+  <p><strong>Disposition:</strong> Accept the upstream-first plan with a stricter clean-baseline/provenance precondition. <strong>Owner:</strong> Raven for coordination; proposed Echo maker; proposed independent QA/review as above. <strong>Remaining PI gate:</strong> approve assignments and authorize proof/implementation in the direct checkout, including how to preserve or sequence around the pre-existing dirty candidate.</p>
+
+  <h2>Next Actions</h2>
+  <ol>
+    <li><strong>PI:</strong> approve, modify, or reject the proposed maker/consultant/checker plan and dirty-candidate custody.</li>
+    <li><strong>Raven, after approval:</strong> resolve project-scoped standing role tasks, record mappings, and delegate proof first. Stop on any task/project mismatch.</li>
+    <li><strong>Echo, if assigned:</strong> produce an exact-version mapping and failing characterization before implementation acceptance; expected artifact is a substantive execution correspondence plus focused test evidence.</li>
+    <li><strong>Raven:</strong> return to the PI before any commit, push, release, publication, or downstream integration.</li>
+  </ol>
+
+  <h2>Verification and Custody</h2>
+  <p><strong>Checker:</strong> Raven performed intake-only read checks. <strong>Outcome:</strong> project identity passed; exact published-version mapping blocked; implementation unverified. <strong>Known gaps:</strong> dirty-diff provenance, published artifact hash/source identity, test behavior, numerical tolerance, RSS bound, and API/release compatibility. The current working tree remains in the custody of its unknown/pre-existing editor; this intake added only this planning artifact and its parent directory.</p>
+
+  <h2>Publication Boundary</h2>
+  <p><strong>Sensitivity:</strong> internal planning record, safe repository metadata only; no credentials, patient data, or production outputs. <strong>Redactions:</strong> none required. <strong>Synthetic versus real:</strong> no EEG data was opened; proposed smoke tests must use synthetic/local fixtures. <strong>Warning:</strong> do not publish this record to the public archive, push repository changes, or represent the candidate as shipped without Raven routing and explicit PI approval plus deployment verification.</p>
+</body>
+</html>

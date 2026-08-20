@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>008 — Issue 271 Cricket revision retest</title></head>
+<body>
+  <h1>Correspondence 008: Raw chunking revision independent retest</h1>
+  <dl>
+    <dt>From</dt><dd>Cricket — Junior Implementation QA Engineer</dd>
+    <dt>To</dt><dd>Raven — Engineering Delivery and Loop Coordinator</dd>
+    <dt>Date</dt><dd>2026-08-17 (America/New_York)</dd>
+    <dt>Re</dt><dd>Issue #271 Echo revision 007 acceptance retest</dd>
+    <dt>Correspondence number</dt><dd>008</dd>
+    <dt>Source thread ID</dt><dd>01a010a6-ecbb-74e1-938e-dc426c2bb9dd</dd>
+    <dt>Local work thread ID</dt><dd>T-2026-08-17-003</dd>
+    <dt>Role thread</dt><dd>Cricket standing project role (current task)</dd>
+    <dt>Status</dt><dd>Independent focused acceptance passed; QA-271-1 resolved; peak-RSS release evidence remains open</dd>
+    <dt>Record type</dt><dd>PI-authorized read-only independent revision retest</dd>
+  </dl>
+
+  <h2>Request Summary</h2>
+  <p>Raven routed Cricket to retest frozen Echo revision 007 without editing it. Required checks were the updated focused and robust suites; prior defect QA-271-1 with non-null <code>orig_time</code> and nonzero <code>first_samp</code>; null-<code>orig_time</code> behavior; sample, onset, origin, and measurement-date preservation; legacy positional constructors; Parallel, Cached, and GPU Raw routing; explicit legacy <code>n_jobs=-1</code> outer compatibility with source/inverse work pinned to one worker; capability/default consistency; and Epochs non-regression. Peak RSS could remain a documented release gap where only mocked STCs were available.</p>
+  <p><strong>Desired outcome:</strong> independent pass/fail status for revision 007. <strong>Non-goals:</strong> implementation repair, real or production EEG access, scientific interpretation, commit, push, release, publication, or final PI acceptance. <strong>Constraints:</strong> inspect only; write only this correspondence artifact. <strong>Approval state:</strong> Raven states the retest is PI-authorized and the maker is frozen.</p>
+
+  <h2>Execution Update</h2>
+  <p>The checkout was inspected on branch <code>codex/271-high-concurrency-source-localization</code> at HEAD <code>0f1c07e26421475be218328ed718ddb997e327b0</code>. The feature remains an uncommitted frozen diff; <code>uv.lock</code> remains outside feature custody. Cricket read revision 007 and the exact revised tests/diff before execution and made no source, test, lockfile, or prior-artifact change.</p>
+  <p>The complete focused file passed 25/25 and the established robust file passed 5/5. An exact verbose 11-case slice independently showed both attached annotation variants, all five legacy positional constructor surfaces, all three advertised Raw processor routes, explicit all-core outer compatibility, three GPU inverse fallbacks pinned to one worker, and Epochs route separation passing.</p>
+  <p>A separate no-write product probe reproduced the former QA-271-1 surface rather than relying only on the test assertion. For attached annotations with both <code>orig_time=None</code> and <code>orig_time=2020-01-01T00:00:00Z</code>, source and output each had <code>first_samp=20</code>, <code>n_times=4</code>, annotation onset <code>2.1</code>, equal origin, and equal measurement date. No exception, omission, or double first-sample shift occurred. QA-271-1 is therefore resolved in the focused synthetic acceptance boundary.</p>
+
+  <h2>Exact Command Evidence</h2>
+  <ul>
+    <li><code>git status --short; git branch --show-current; git rev-parse HEAD; Get-ChildItem plans\correspondance ...; rg ...</code>, repository root, 1.6 seconds, exit 0: confirmed frozen dirty inventory, branch, HEAD, revision 007, prior QA/review records, and expanded test surfaces.</li>
+    <li><code>Get-Content -Raw plans\correspondance\007-issue-271-maker-revision-complete.html; rg -n "^def test_|^    def test_" ...; git diff --stat ...; git diff -- ...</code>, 1.4 seconds, exit 0: revision record read; test inventory and exact time-base/routing/concurrency changes inspected. Feature delta was seven tracked source files, 239 insertions and 98 deletions, excluding plans and <code>uv.lock</code>.</li>
+    <li><code>.venv\Scripts\python.exe -B -m pytest tests\test_raw_chunking.py -q --maxfail=1 --no-cov -p no:cacheprovider</code>, repository root, 4.89 seconds wall time, exit 0: 25 collected, 25 passed in 1.63 seconds.</li>
+    <li><code>.venv\Scripts\python.exe -B -m pytest tests\test_robust_processor.py -q --maxfail=1 --no-cov -p no:cacheprovider</code>, 4.01 seconds wall time, exit 0: five collected, five passed in 0.80 seconds.</li>
+    <li>Exact acceptance command naming <code>test_raw_output_preserves_attached_annotation_time_base</code>, <code>test_new_constructor_parameters_are_appended_after_legacy_surface</code>, <code>test_parallel_family_raw_routes_to_shared_bounded_implementation</code>, <code>test_explicit_legacy_all_core_workers_do_not_reach_forward_inverse</code>, <code>test_gpu_fallback_inverse_is_single_worker</code>, and <code>test_epochs_processing_does_not_enter_raw_chunk_path</code>, with <code>-vv --maxfail=1 --no-cov -p no:cacheprovider</code>, 3.99 seconds wall time, exit 0: 11 collected, 11 passed in 0.80 seconds. Parameterized output explicitly showed null and non-null annotation origins; Parallel, Cached, and GPU Raw routes; CuPy, PyTorch, and TensorFlow inverse fallbacks; and Epochs non-regression.</li>
+    <li><code>.venv\Scripts\python.exe -B -m autoclean_eeg2source.cli process --help</code> followed by read-only signature/capability introspection, 6.49 seconds wall time, exit 0: CLI exposes <code>--chunk-seconds</code> and documents <code>--n-jobs</code> default 1; capability is <code>sequential-raw-chunking-v1</code>; host CPU count was 14; all five constructors append <code>chunk_seconds=30.0</code> after their legacy surfaces; Parallel/Cached/GPU default <code>n_jobs=1</code>; benchmark default is 1.</li>
+    <li>No-write synthetic product probe using <code>unittest.mock.patch</code> for directory creation, export, and metadata write, 3.59 seconds wall time, exit 0: for both origin variants, source/output <code>first_samp=20</code>, <code>n_times=4</code>, onset <code>[2.1]</code>, equal <code>orig_time</code>, and equal <code>meas_date</code>.</li>
+    <li><code>git diff --check -- src/autoclean_eeg2source tests/test_raw_chunking.py</code> plus the global-thread-mutation search, 1.5 seconds, exit 0: no whitespace errors; Windows line-ending warnings only; no <code>OPENBLAS</code>, <code>MKL_NUM_THREADS</code>, <code>OMP_NUM_THREADS</code>, <code>os.environ</code>, or <code>threadpool_limits</code> matches.</li>
+  </ul>
+
+  <h2>Acceptance Matrix Result</h2>
+  <ul>
+    <li><strong>QA-271-1 and annotation time base:</strong> pass for attached null and timezone-aware non-null <code>orig_time</code>, nonzero <code>first_samp</code>, sample count, onset, origin, and measurement-date preservation.</li>
+    <li><strong>Legacy positional constructors:</strong> pass for Sequential, Parallel, Cached, GPU, and Robust; <code>chunk_seconds</code> is appended and defaults to 30 seconds.</li>
+    <li><strong>Advertised Raw routing:</strong> pass; Parallel, Cached, and GPU dispatch Raw to the shared bounded sequential implementation while Epochs retain their specialized paths.</li>
+    <li><strong>Concurrency compatibility:</strong> pass; default outer workers are 1, explicit <code>-1</code> resolves to the 14 logical CPUs observed by Python, Parallel forward work receives <code>n_jobs=1</code>, and all three GPU fallback inverse calls receive <code>n_jobs=1</code>.</li>
+    <li><strong>Capability and CLI/API defaults:</strong> pass; capability remains <code>sequential-raw-chunking-v1</code>; CLI and library defaults are consistent with the tested contract.</li>
+    <li><strong>Epochs regression:</strong> pass at the requested focused routing/call boundary; the Raw chunk method is not entered.</li>
+    <li><strong>Focused Raw/robust behavior:</strong> pass, 30 total tests.</li>
+  </ul>
+
+  <h2>Scope Limits and Known Gap</h2>
+  <p>No real EEG, real inverse, fsaverage download, production path, EEGLAB round trip, package build/install, full suite, CI, downstream AutoClean, commit, push, merge, release, publication, or archive deployment was performed. The exact routing and memory-lifetime tests use synthetic/mocked objects. A meaningful peak-RSS result is still unavailable because the dominant inverse/STC allocation is mocked; reporting that process number would create false assurance. Peak RSS remains a documented release-evidence gap requiring a bounded local real-inverse fixture and an explicit threshold if Raven/PI requires it.</p>
+
+  <h2>Conflict Status</h2>
+  <p><strong>Flag:</strong> prior Cricket/Boulder records found annotation, positional API, advertised Raw-routing, and worker-compatibility defects. <strong>Respond:</strong> Echo revision 007 implemented the Raven-routed response; Cricket independently reran the corrected boundaries. <strong>Decide:</strong> focused acceptance now passes; final release-evidence and PI disposition remain outside Cricket authority. <strong>Document:</strong> prior 006 records preserve the original failures, revision 007 preserves the maker response, and this 008 preserves the independent retest. No new conflict was found.</p>
+
+  <h2>Execution Decision or Update</h2>
+  <p><strong>Disposition:</strong> accept revision 007 for the requested focused implementation QA boundary, subject to Raven/PI final acceptance and separate release gates. <strong>Owner:</strong> Raven retains integration and PI-facing custody. <strong>Rationale:</strong> all 30 focused tests, 11 named acceptance cases, API/CLI inspection, and independent no-write time-base reproduction pass; QA-271-1 is resolved. <strong>Remaining gate:</strong> Raven/PI decides whether real-fixture RSS, build/install, round-trip, full-suite, version, and lockfile evidence are mandatory before commit or release.</p>
+
+  <h2>Verification and Custody</h2>
+  <p><strong>Checker:</strong> Cricket, independent from maker Echo. <strong>Outcome:</strong> passed for focused acceptance; no implementation defect found in the requested matrix. <strong>Known gap:</strong> meaningful real-fixture peak RSS and broader release evidence remain unverified. <strong>Custody:</strong> source/tests remain frozen under Raven/Echo custody; Cricket created only this record and grants no final merge or release approval.</p>
+
+  <h2>Next Actions</h2>
+  <ol>
+    <li><strong>Raven:</strong> reconcile this independent pass with senior review and PI gates; stop condition is a documented acceptance or further routed defect.</li>
+    <li><strong>Raven/PI:</strong> decide whether to require a bounded real-inverse RSS threshold, package build/install, EEGLAB round trip, full suite, version selection, and <code>uv.lock</code> disposition before Git/release action.</li>
+    <li><strong>Authorized checker, only if routed:</strong> execute any additional release-evidence matrix without production data or paths; expected artifact is a separate verification record.</li>
+  </ol>
+
+  <h2>Publication Boundary</h2>
+  <p><strong>Sensitivity:</strong> internal engineering QA record; repository metadata and synthetic observations only. <strong>Redactions:</strong> none required. <strong>Synthetic versus real:</strong> all runtime checks used synthetic/mocked data; no patient, real, or production EEG data was accessed. <strong>Safety warning:</strong> withhold from the public archive until Raven reviews and explicitly routes publication; do not represent the feature as committed, merged, released, shipped, or downstream-integrated.</p>
+</body>
+</html>

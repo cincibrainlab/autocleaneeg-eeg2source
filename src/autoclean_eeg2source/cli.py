@@ -109,6 +109,7 @@ def process_command(args):
             montage=args.montage,
             resample_freq=args.resample_freq,
             lambda2=args.lambda2,
+            chunk_seconds=args.chunk_seconds,
             recovery_mode=True,
             error_dir=args.error_dir
         )
@@ -124,6 +125,7 @@ def process_command(args):
                 montage=args.montage,
                 resample_freq=args.resample_freq,
                 lambda2=args.lambda2,
+                chunk_seconds=args.chunk_seconds,
                 n_jobs=args.n_jobs,
                 batch_size=args.batch_size,
                 parallel_method=args.parallel_method,
@@ -136,6 +138,7 @@ def process_command(args):
                 montage=args.montage,
                 resample_freq=args.resample_freq,
                 lambda2=args.lambda2,
+                chunk_seconds=args.chunk_seconds,
                 n_jobs=args.n_jobs,
                 batch_size=args.batch_size,
                 parallel_method=args.parallel_method
@@ -153,6 +156,7 @@ def process_command(args):
                 montage=args.montage,
                 resample_freq=args.resample_freq,
                 lambda2=args.lambda2,
+                chunk_seconds=args.chunk_seconds,
                 n_jobs=args.n_jobs,
                 batch_size=args.batch_size,
                 parallel_method=args.parallel_method,
@@ -166,6 +170,7 @@ def process_command(args):
                 montage=args.montage,
                 resample_freq=args.resample_freq,
                 lambda2=args.lambda2,
+                chunk_seconds=args.chunk_seconds,
                 n_jobs=args.n_jobs,
                 batch_size=args.batch_size,
                 parallel_method=args.parallel_method
@@ -177,7 +182,8 @@ def process_command(args):
             memory_manager=memory_manager,
             montage=args.montage,
             resample_freq=args.resample_freq,
-            lambda2=args.lambda2
+            lambda2=args.lambda2,
+            chunk_seconds=args.chunk_seconds
         )
     
     # Process files
@@ -191,7 +197,7 @@ def process_command(args):
             batch_results = processor.process_batch(
                 set_files, 
                 output_dir, 
-                max_workers=args.n_jobs
+                max_workers=processor.n_jobs if args.n_jobs == -1 else args.n_jobs
             )
             results.extend(batch_results)
         except Exception as e:
@@ -405,6 +411,7 @@ def benchmark_command(args):
         memory_manager=MemoryManager(max_memory_gb=args.max_memory),
         montage=args.montage,
         resample_freq=args.resample_freq,
+        chunk_seconds=args.chunk_seconds,
         lambda2=args.lambda2
     )
     
@@ -419,6 +426,7 @@ def benchmark_command(args):
             memory_manager=opt_memory_manager,
             montage=args.montage,
             resample_freq=args.resample_freq,
+            chunk_seconds=args.chunk_seconds,
             lambda2=args.lambda2
         )
     
@@ -429,6 +437,7 @@ def benchmark_command(args):
             montage=args.montage,
             resample_freq=args.resample_freq,
             lambda2=args.lambda2,
+            chunk_seconds=args.chunk_seconds,
             n_jobs=args.n_jobs,
             batch_size=args.batch_size,
             parallel_method=args.parallel_method
@@ -444,6 +453,7 @@ def benchmark_command(args):
             montage=args.montage,
             resample_freq=args.resample_freq,
             lambda2=args.lambda2,
+            chunk_seconds=args.chunk_seconds,
             n_jobs=args.n_jobs,
             batch_size=args.batch_size,
             parallel_method=args.parallel_method,
@@ -461,6 +471,7 @@ def benchmark_command(args):
                 montage=args.montage,
                 resample_freq=args.resample_freq,
                 lambda2=args.lambda2,
+                chunk_seconds=args.chunk_seconds,
                 n_jobs=args.n_jobs,
                 batch_size=args.batch_size,
                 parallel_method=args.parallel_method,
@@ -745,6 +756,12 @@ def main():
         help="Regularization parameter"
     )
     process_parser.add_argument(
+        "--chunk-seconds",
+        type=float,
+        default=30.0,
+        help="Raw inverse chunk length in seconds (greater than 0, at most 3600)"
+    )
+    process_parser.add_argument(
         "--max-memory",
         type=float,
         default=4.0,
@@ -784,8 +801,8 @@ def main():
     process_parser.add_argument(
         "--n-jobs",
         type=int,
-        default=-1,
-        help="Number of parallel jobs (-1 for all cores)"
+        default=1,
+        help="Number of parallel jobs (-1 for all available cores; default: 1)"
     )
     process_parser.add_argument(
         "--batch-size",
@@ -958,6 +975,12 @@ def main():
         help="Regularization parameter"
     )
     benchmark_parser.add_argument(
+        "--chunk-seconds",
+        type=float,
+        default=30.0,
+        help="Raw inverse chunk length in seconds (greater than 0, at most 3600)"
+    )
+    benchmark_parser.add_argument(
         "--max-memory",
         type=float,
         default=4.0,
@@ -993,8 +1016,8 @@ def main():
     benchmark_parser.add_argument(
         "--n-jobs",
         type=int,
-        default=-1,
-        help="Number of parallel jobs (-1 for all cores)"
+        default=1,
+        help="Number of parallel jobs (-1 for all available cores; default: 1)"
     )
     benchmark_parser.add_argument(
         "--batch-size",

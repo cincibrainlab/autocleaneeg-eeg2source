@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>011 — Boulder final sentinel review</title></head>
+<body>
+  <h1>Correspondence 011: Final senior review of batch sentinel correction</h1>
+  <dl>
+    <dt>From</dt><dd>The Boulder — Senior Git Code Reviewer</dd>
+    <dt>To</dt><dd>Raven — Engineering Delivery and Loop Coordinator</dd>
+    <dt>Date</dt><dd>2026-08-17 (America/New_York)</dd>
+    <dt>Re</dt><dd>Issue #271 Echo correspondence 010 batch sentinel correction</dd>
+    <dt>Correspondence number</dt><dd>011</dd>
+    <dt>Source thread ID</dt><dd>01a010a6-ecbb-74e1-938e-dc426c2bb9dd</dd>
+    <dt>Local work thread ID</dt><dd>T-2026-08-17-003</dd>
+    <dt>Role thread</dt><dd>The Boulder standing project role (current task)</dd>
+    <dt>Status</dt><dd>Independent sentinel review passed; commit/merge ready within reviewed scope; release not ready</dd>
+    <dt>Record type</dt><dd>PI-authorized read-only independent senior code review</dd>
+  </dl>
+
+  <h2>Request Summary</h2>
+  <p>Raven requested a final read-only review of the narrow Echo 010 correction after Boulder 009 found that explicit <code>n_jobs=-1</code> reached <code>ProcessPoolExecutor</code> unchanged. The required outcome was confirmation that CLI and <code>process_batch</code> normalize the legacy sentinel to a positive outer worker count, without changing the single-worker source/inverse boundary, followed by separate commit/merge and release-readiness advice. Non-goals were code/test/lockfile edits, broader refactoring, commit, push, merge execution, release, publication, and final PI authority.</p>
+
+  <h2>Senior Review Result</h2>
+  <p><strong>No actionable finding remains in the narrow sentinel revision.</strong> Boulder 009's P1 is resolved. <code>ParallelProcessor.process_batch</code> maps <code>None</code> and <code>-1</code> to the constructor's already resolved positive <code>self.n_jobs</code>, rejects booleans, non-integers, zero, and other negative values, and passes only a positive integer to <code>ProcessPoolExecutor</code>. The CLI independently maps an explicit user <code>-1</code> to <code>processor.n_jobs</code>, preventing the former executor error and individual-file fallback. CLI help now states the sentinel behavior.</p>
+  <p>The correction does not widen nested source concurrency. Sequential and Parallel forward work remains <code>n_jobs=1</code>; the inspected GPU CuPy, PyTorch, and TensorFlow inverse fallbacks remain <code>n_jobs=1</code>; MNE 1.6 Raw inverse and Parallel Epochs paths do not receive the resolved outer worker count. The module-level process worker continues to construct its per-file processor with <code>n_jobs=1</code>. Explicit <code>-1</code> therefore retains legacy outer/label-processing semantics without leaking all-core behavior into source/inverse work.</p>
+
+  <h2>Tests and Compatibility</h2>
+  <ul>
+    <li>The direct batch regression replaces <code>ProcessPoolExecutor</code> with a capturing fake and proves <code>max_workers == processor.n_jobs &gt; 0</code> for <code>process_batch(..., max_workers=-1)</code>.</li>
+    <li>The CLI regression proves explicit <code>args.n_jobs=-1</code> reaches <code>process_batch</code> as a resolved positive count and does not enter individual fallback.</li>
+    <li>The full focused Raw/API/compatibility suite and robust regression suite pass together: 32/32.</li>
+    <li>Prior accepted behavior remains covered: attached annotation time bases, half-open chunks, one-STC lifetime, failure release, validation, positional constructors, processor-family Raw routing, capability signal, conservative defaults, explicit legacy outer workers, GPU inverse pinning, and Epochs separation.</li>
+  </ul>
+
+  <h2>Readiness Advice</h2>
+  <p><strong>Commit readiness:</strong> ready from this independent code-review boundary, provided the feature commit intentionally includes the reviewed source and focused test and excludes or separately resolves the out-of-custody <code>uv.lock</code> diff. Raven/PI retains authorization and commit-message/scope custody.</p>
+  <p><strong>Merge readiness:</strong> ready from the reviewed functional/API boundary. The former P1 findings are closed and no new blocking code defect was found. Normal branch/CI/repository policy and final Raven/PI decision still apply; this record is advice, not merge approval.</p>
+  <p><strong>Release readiness:</strong> not ready. A meaningful bounded real-inverse peak-RSS measurement remains unperformed; package build/install and CLI-from-installed-artifact smoke remain unperformed; EEGLAB export/read-back compatibility remains unverified; package version must be selected so changed behavior is not published as the immutable 0.3.7 artifact; <code>uv.lock</code> custody must be decided; and any downstream AutoClean consumption must remain blocked until the new package identity is actually published and verified.</p>
+
+  <h2>Remaining Non-Blocking Engineering Note</h2>
+  <p>The previously documented general-exception cleanup hardening remains a P2 production-quality follow-up: chunk STCs are released in <code>finally</code>, but cleanup failures can mask a primary exception and outer processors do not uniformly consolidate cleanup. This was not changed by Echo 010, is not a regression in the sentinel patch, and does not block the reviewed commit/merge boundary. Raven may carry it separately rather than reopening the completed sentinel fix.</p>
+
+  <h2>Material Alternatives</h2>
+  <p>No broader concurrency abstraction is warranted. Echo 010 uses the smallest compatible boundary normalization and tests both public entry points. Release evidence should remain a separate bounded verification job rather than being folded into this functional patch.</p>
+
+  <h2>Scope Limits</h2>
+  <p>I read correspondence 010, inspected the narrow CLI/<code>process_batch</code> changes and new tests, traced source/inverse worker arguments in the reviewed feature files, reran the exact and full focused checks, inspected CLI help, and checked diff consistency. I did not run a real multiprocessing workload, real EEG/inverse, peak-RSS measurement, package build/install, full repository suite, CI, EEGLAB round trip, downstream integration, commit, push, merge, release, or publication. <code>uv.lock</code> remains excluded. I did not edit source, tests, lockfile, or prior artifacts; this HTML is my only write.</p>
+
+  <h2>Evidence</h2>
+  <ul>
+    <li><code>.venv\Scripts\python.exe -B -m pytest tests\test_raw_chunking.py::test_process_batch_resolves_legacy_all_core_sentinel tests\test_raw_chunking.py::test_cli_batch_resolves_minus_one_without_individual_fallback -q --maxfail=1 --no-cov -p no:cacheprovider</code>: 2 passed in 0.88 seconds.</li>
+    <li><code>.venv\Scripts\python.exe -B -m pytest tests\test_raw_chunking.py tests\test_robust_processor.py -q --maxfail=1 --no-cov -p no:cacheprovider</code>: 32 passed in 2.24 seconds on Python 3.11.15.</li>
+    <li><code>.venv\Scripts\python.exe -B -m autoclean_eeg2source.cli process --help</code>: exit 0; help states <code>-1</code> means all available cores and default is 1.</li>
+    <li>Static source trace: CLI normalizes explicit <code>-1</code>; <code>process_batch</code> normalizes <code>None</code>/<code>-1</code> and validates the executor boundary; per-file helper and inspected forward/GPU inverse calls remain fixed at one worker.</li>
+    <li><code>git diff --check -- src/autoclean_eeg2source tests/test_raw_chunking.py</code>: no whitespace errors; only existing Windows line-ending warnings.</li>
+    <li>Focused test artifact: 503 lines, SHA-256 <code>1A9709D4DBD2EF99E876F0966AD6A237976B0D47D73438132AEB80E0BFE18C2D</code>.</li>
+    <li>Tracked feature delta excluding <code>uv.lock</code>: seven source files, 245 insertions and 101 deletions; untracked correspondence and focused test remain visible in working-tree custody.</li>
+  </ul>
+
+  <h2>Conflict Status</h2>
+  <p><strong>Flag:</strong> Boulder 009 found explicit batch <code>-1</code> did not honor the legacy outer-worker contract. <strong>Respond:</strong> Echo 010 normalized both public boundaries and added reproducing regressions. <strong>Decide:</strong> this independent review accepts the correction within the reviewed code boundary; Raven/PI retains final Git and release decisions. <strong>Document:</strong> 009 preserves the failure, 010 preserves the maker response, and this 011 preserves independent closure. No unresolved sentinel conflict remains.</p>
+
+  <h2>Execution Decision or Update</h2>
+  <p><strong>Disposition:</strong> Accept the narrow sentinel revision for commit/merge consideration; release remains pending. <strong>Owner:</strong> Raven owns integration and PI-facing disposition. <strong>Rationale:</strong> the exact former failure now has direct API and CLI regressions, all 32 focused checks pass, and inverse-worker isolation is unchanged. <strong>Remaining PI gate:</strong> all commit, push, merge, release, publication, version, lockfile, and downstream actions remain human-controlled.</p>
+
+  <h2>Verification and Custody</h2>
+  <p><strong>Checker:</strong> The Boulder, independent from maker Echo. <strong>Outcome:</strong> pass; no severity-ranked actionable finding in the narrow correction. <strong>Known gaps:</strong> RSS, real inverse, installed-package smoke, EEGLAB round trip, full suite/CI, version/release, and downstream integration. <strong>Custody:</strong> candidate remains frozen with Raven/Echo; this reviewer created only correspondence 011.</p>
+
+  <h2>Next Actions</h2>
+  <ol>
+    <li><strong>Raven/PI:</strong> decide and authorize the reviewed commit/merge scope, explicitly excluding or separately disposing of <code>uv.lock</code>; stop on any candidate change after this review.</li>
+    <li><strong>Raven/authorized release checker:</strong> before release, run bounded real-inverse RSS evidence, build/install and installed-CLI smoke, EEGLAB round trip, select/update the package version, settle lockfile custody, and verify publication.</li>
+    <li><strong>Downstream owner:</strong> consume only the verified published package/capability after Raven/PI release authorization; do not integrate from this dirty checkout.</li>
+  </ol>
+
+  <h2>Publication Boundary</h2>
+  <p><strong>Sensitivity:</strong> internal engineering review. <strong>Redactions:</strong> none presently required. <strong>Synthetic versus real:</strong> all runtime evidence used synthetic/mocked inputs; no patient, real, production, credential, or protected data was accessed. <strong>Safety warning:</strong> withhold from the public archive unless Raven explicitly routes publication and verifies deployment; do not represent this review as a commit, merge, release, publication, or downstream deployment.</p>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>009 — Boulder final revision review</title></head>
+<body>
+  <h1>Correspondence 009: Final senior review of Raw chunking revision</h1>
+  <dl>
+    <dt>From</dt><dd>The Boulder — Senior Git Code Reviewer</dd>
+    <dt>To</dt><dd>Raven — Engineering Delivery and Loop Coordinator</dd>
+    <dt>Date</dt><dd>2026-08-17 (America/New_York)</dd>
+    <dt>Re</dt><dd>Issue #271 Echo revision 007 and Cricket retest 008</dd>
+    <dt>Correspondence number</dt><dd>009</dd>
+    <dt>Source thread ID</dt><dd>01a010a6-ecbb-74e1-938e-dc426c2bb9dd</dd>
+    <dt>Local work thread ID</dt><dd>T-2026-08-17-003</dd>
+    <dt>Role thread</dt><dd>The Boulder standing project role (current task)</dd>
+    <dt>Status</dt><dd>Final revision review complete; one P1 remains; not commit/merge/release ready</dd>
+    <dt>Record type</dt><dd>PI-authorized read-only independent senior code review</dd>
+  </dl>
+
+  <h2>Request Summary</h2>
+  <p>Raven requested a final read-only review of the frozen feature diff after Echo revision 007 and Cricket retest 008. Required checks were resolution of the prior P1 findings: annotation/time-base behavior, public positional constructors, Parallel/Cached/GPU Raw routing, and explicit legacy <code>n_jobs=-1</code> outer semantics while source/inverse work remains single-worker. The review also covers capability/API/version custody, exception cleanup, output compatibility, tests, and whether peak-RSS/package-build gaps block commit or release. <code>uv.lock</code> is excluded from feature custody. No candidate edit, commit, push, release, or publication was authorized.</p>
+
+  <h2>Senior Review Findings</h2>
+  <ol>
+    <li><strong>P1 — Explicit legacy <code>n_jobs=-1</code> is still broken on the public batch/CLI path.</strong> The constructor correctly resolves <code>-1</code> to <code>multiprocessing.cpu_count()</code>, but <code>cli.process_command</code> passes the literal <code>args.n_jobs</code> as <code>process_batch(..., max_workers=args.n_jobs)</code>. <code>process_batch</code> only substitutes <code>self.n_jobs</code> for falsey values, so <code>-1</code> reaches <code>ProcessPoolExecutor(max_workers=-1)</code> and raises <code>ValueError: max_workers must be greater than 0</code>. The CLI catches that and silently falls back to individual processing. Thus the promised explicit all-core outer semantics do not hold for <code>--n-jobs -1 --batch-processing</code>, and the current test covers only constructor resolution plus forward-worker pinning. <strong>Action:</strong> normalize the optional batch argument through the same <code>-1</code>/positive validation contract (or pass the already normalized <code>processor.n_jobs</code> from CLI), document <code>-1</code> in CLI help, and add direct <code>process_batch</code> plus CLI batch regression coverage.</li>
+    <li><strong>P2 — General failure cleanup remains weaker than the requested resource contract.</strong> The chunk loop does release its STC in <code>finally</code>, calls memory-manager cleanup, and the injected reduction-failure test passes. However, a cleanup exception can still mask the primary inverse/reduction exception, and the outer sequential/parallel/GPU general-exception paths do not uniformly invoke owned-resource cleanup. This is not a newly discovered P1 and does not invalidate the one-STC lifetime proof, but it remains a production-hardening gap. <strong>Action:</strong> preserve the primary exception if cleanup fails and consolidate idempotent outer cleanup when the next revision is routed.</li>
+    <li><strong>P2 release evidence — Peak RSS, package build/install, real inverse, and EEGLAB round trip remain unverified.</strong> The current mocked allocation tests correctly prove chunk order and one-STC lifetime but cannot establish a process peak-RSS bound. No package build/install or exported-file round trip was run. These are release gates, not reasons by themselves to withhold a corrected feature commit or merge, provided Raven/PI explicitly records them as pre-release requirements.</li>
+    <li><strong>P2 release/version custody — Capability is explicit, but publication under immutable <code>0.3.7</code> remains blocked.</strong> <code>RAW_CHUNKING_CAPABILITY="sequential-raw-chunking-v1"</code> is exported and tested. The distribution and CLI still report 0.3.7 despite changed behavior and defaults. A branch commit may precede version selection, and merge may do so if the repository's release process versions later, but no package may be built or published as the existing immutable 0.3.7 identity.</li>
+  </ol>
+
+  <h2>Resolved Prior P1s</h2>
+  <ul>
+    <li><strong>Annotation/time base — resolved in the focused MNE 1.6 boundary.</strong> The revised path copies <code>meas_date</code>, preserves nonzero <code>first_samp</code>, normalizes already-attached relative annotations before reattachment, and retains absolute <code>orig_time</code>. Tests use annotations actually attached to source Raw objects for null and non-null origins and preserve sample count/onsets without omission or double shift.</li>
+    <li><strong>Positional constructor compatibility — resolved.</strong> <code>chunk_seconds</code> is appended after each prior public positional surface for Sequential, Parallel, Cached, GPU, and Robust; prior positional forms are exercised.</li>
+    <li><strong>Parallel/Cached/GPU Raw routing — resolved.</strong> Raw dispatch delegates to <code>SequentialProcessor.process_file</code>, so all advertised modes use the single bounded chunk implementation; Epochs remain on specialized paths.</li>
+    <li><strong>Source/inverse worker boundary — resolved for inspected feature paths.</strong> forward source-space work is fixed at one worker, GPU CuPy/PyTorch/TensorFlow inverse fallbacks explicitly pass <code>n_jobs=1</code>, MNE 1.6 <code>apply_inverse_raw</code> has no <code>n_jobs</code> argument, and the parallel Epochs call likewise does not expose one. No BLAS/OpenMP process-global mutation was introduced.</li>
+  </ul>
+
+  <h2>Readiness Advice</h2>
+  <p><strong>Feature commit:</strong> withhold a completion/acceptance commit until the remaining P1 batch sentinel defect and its regression test are corrected. A clearly labeled work-in-progress checkpoint would be a Raven/PI Git decision, not reviewer acceptance. <strong>Merge:</strong> blocked by the same P1; after a narrow fix and independent retest, the RSS/build/round-trip gaps need not block merge if they are explicitly carried as release gates. <strong>Release/publication:</strong> blocked by meaningful real-fixture RSS if required by Raven/PI, package build/install, EEGLAB round trip, version selection, lockfile disposition, and downstream compatibility verification. This is advice only; final Git/release authority remains with Raven/PI.</p>
+
+  <h2>Material Alternatives</h2>
+  <p>The minimal correction is to normalize <code>max_workers=-1</code> inside <code>process_batch</code> to <code>self.n_jobs</code> and reject all other non-positive/non-integer values, then have CLI use that single contract. A broader concurrency abstraction is unnecessary. Release evidence can remain a separate bounded job after the functional contract is closed.</p>
+
+  <h2>Scope Limits</h2>
+  <p>I inspected the complete tracked feature diff against HEAD <code>0f1c07e26421475be218328ed718ddb997e327b0</code>, the 423-line focused test (SHA-256 <code>9941D7EEBA451F63117AAD04B33D39E18B512AF88DBFF39B0D2BF2D7DA72EF02</code>), project metadata, and correspondence 007/008. I excluded <code>uv.lock</code>. I did not inspect real EEG, downstream AutoClean, CI, a built package, a real inverse, process RSS, or an EEGLAB round trip. I did not edit source, tests, lockfile, or prior artifacts; this correspondence is my only write.</p>
+
+  <h2>Evidence</h2>
+  <ul>
+    <li><code>.venv\Scripts\python.exe -B -m pytest tests\test_raw_chunking.py tests\test_robust_processor.py -q --maxfail=1 --no-cov -p no:cacheprovider</code>: 30 passed in 1.96 seconds on Python 3.11.15.</li>
+    <li>No-write batch probe: <code>ParallelProcessor(n_jobs=-1)</code> resolved to 14 host workers; <code>process_batch([], "unused", max_workers=-1)</code> raised <code>ValueError: max_workers must be greater than 0</code>.</li>
+    <li>Static trace: <code>cli.py</code> line 200 passes literal <code>args.n_jobs</code>; <code>parallel_processor.py</code> line 447 preserves truthy <code>-1</code>; line 457 constructs <code>ProcessPoolExecutor</code> with it.</li>
+    <li><code>.venv\Scripts\python.exe -B -m autoclean_eeg2source.cli process --help</code>: exit 0; options are exposed, but help documents only default 1 and omits supported <code>-1</code> semantics.</li>
+    <li><code>git diff --check -- src/autoclean_eeg2source tests/test_raw_chunking.py</code>: no whitespace errors; Windows line-ending warnings only.</li>
+    <li>Source/test search found no <code>OPENBLAS</code>, <code>MKL_NUM_THREADS</code>, <code>OMP_NUM_THREADS</code>, <code>os.environ</code>, or <code>threadpool_limits</code> mutation.</li>
+    <li>Working-tree feature delta excluding <code>uv.lock</code>: seven tracked source files, 239 insertions and 98 deletions, plus the focused test.</li>
+  </ul>
+
+  <h2>Conflict Status</h2>
+  <p><strong>Flag:</strong> correspondence 007/008 reports legacy <code>-1</code> outer semantics as passing, while the public batch and CLI path still fails that sentinel. <strong>Respond:</strong> this review distinguishes constructor/forward coverage from actual batch-executor coverage and supplies a direct reproduction. <strong>Decide:</strong> pending Raven routing of a narrow maker correction and independent retest. <strong>Document:</strong> prior records remain historically accurate for the checks they ran; this record captures the uncovered boundary. No merge/release action should proceed on the claim that all prior P1s are closed.</p>
+
+  <h2>Execution Decision or Update</h2>
+  <p><strong>Disposition:</strong> Modify. Three prior P1 categories are resolved; explicit legacy outer-batch compatibility is not. <strong>Owner:</strong> Raven routes any accepted correction to the maker/integration owner and a checker. <strong>Rationale:</strong> the requested legacy contract fails through a supported CLI/API path despite passing focused tests. <strong>Remaining PI gate:</strong> commit, merge, release, publication, version, lockfile, and downstream actions remain human-controlled. This is merge-readiness advice, not final approval.</p>
+
+  <h2>Verification and Custody</h2>
+  <p><strong>Checker:</strong> The Boulder, independent from maker Echo and QA Cricket. <strong>Outcome:</strong> focused suite passes; annotation, constructor, Raw routing, source-worker, capability, and BLAS checks pass; direct outer-batch <code>-1</code> probe fails. <strong>Known gaps:</strong> real inverse/RSS, build/install, round trip, full suite, CI, version/release, and downstream integration. <strong>Custody:</strong> candidate remains frozen under Raven/Echo; only this reviewer-owned correspondence was added.</p>
+
+  <h2>Next Actions</h2>
+  <ol>
+    <li><strong>Raven:</strong> route the batch-sentinel P1 to the maker; stop condition is a reviewed minimal diff and test covering public <code>process_batch</code> and CLI batch semantics.</li>
+    <li><strong>Independent checker:</strong> rerun the 30 focused tests and reproduce executor worker normalization without spawning production work; expected artifact is a separate pass/fail record.</li>
+    <li><strong>Raven/PI:</strong> after P1 closure, decide commit/merge and record RSS/build/round-trip/version/lockfile requirements as explicit release gates.</li>
+  </ol>
+
+  <h2>Publication Boundary</h2>
+  <p><strong>Sensitivity:</strong> internal engineering review. <strong>Redactions:</strong> none presently required. <strong>Synthetic versus real:</strong> all runtime evidence used synthetic/mocked inputs; no patient, real, production, credential, or protected data was accessed. <strong>Safety warning:</strong> withhold from the public archive unless Raven explicitly routes publication; do not represent the candidate as committed, merged, released, shipped, or downstream-integrated.</p>
+</body>
+</html>

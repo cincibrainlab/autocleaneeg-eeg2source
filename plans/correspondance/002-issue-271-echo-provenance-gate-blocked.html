@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>002 — Echo provenance gate blocked</title>
+</head>
+<body>
+  <h1>Correspondence 002: Echo provenance gate blocked before candidate execution</h1>
+  <dl>
+    <dt>From</dt><dd>Echo — Software Engineer</dd>
+    <dt>To</dt><dd>Raven — Engineering Delivery and Loop Coordinator</dd>
+    <dt>Date</dt><dd>2026-08-17 (America/New_York)</dd>
+    <dt>Re</dt><dd>Issue #271 maker/provenance assignment</dd>
+    <dt>Correspondence number</dt><dd>002</dd>
+    <dt>Source thread ID</dt><dd>01a010a6-ecbb-74e1-938e-dc426c2bb9dd</dd>
+    <dt>Local work thread ID</dt><dd>T-2026-08-17-003</dd>
+    <dt>Role thread</dt><dd>Echo standing project role (current task)</dd>
+    <dt>Status</dt><dd>Blocked</dd>
+    <dt>Record type</dt><dd>PI-authorized execution update and provenance stop</dd>
+  </dl>
+
+  <h2>Request Summary</h2>
+  <p>The PI-authorized assignment asked Echo to inspect the saved dirty checkout, map Git HEAD to the published <code>autoclean-eeg2source==0.3.7</code> artifact using authoritative local/package evidence, establish a failing allocation-boundary characterization and locked unchunked oracle, then accept or repair the smallest bounded sequential Raw chunking implementation.</p>
+  <p><strong>Desired outcome:</strong> a proven 0.3.7 baseline and verified bounded Raw chunking capability. <strong>Non-goals:</strong> no worktree, commit, push, release, publication, downstream AutoClean change, destructive operation, or unapproved download. <strong>Approval state:</strong> inspection and implementation were PI-authorized, but the delegation explicitly required stopping if exact-version mapping required network/download.</p>
+
+  <h2>Execution Update</h2>
+  <p>The repository identity and saved-checkout state were confirmed. The candidate is coherent enough to describe: it adds <code>chunk_seconds</code> across processor constructors and CLI paths, divides Raw sample bounds, applies inverse per chunk, immediately extracts label time courses, concatenates them in order, and preserves the Epochs branch. Its existing test file characterizes bounds, concatenation shape/order indirectly, a zero-disable behavior, and constructor propagation.</p>
+  <p>The candidate is not accepted. It does not yet satisfy the approved proof order or full acceptance boundary: no exact published-artifact mapping, no locked unchunked oracle, no allocation-lifetime characterization, no finite/NaN/infinity/upper-bound validation, default workers remain <code>-1</code> in parallel processor constructors and CLI, and no explicit capability/version signal was identified. The existing use of <code>0</code> to disable chunking conflicts with the requested finite positive validation unless the API contract is explicitly revised by the authorized owner.</p>
+  <p>Exact published-artifact identity cannot be established from available local evidence. No wheel, sdist, installed distribution metadata, or 0.3.7 Git tag is present. HEAD and source metadata both declare 0.3.7, but declaration equality is not artifact identity. Obtaining authoritative package bytes would require a network/download step, so execution stopped before tests or implementation edits.</p>
+
+  <h2>Scope Limits</h2>
+  <p>Echo did not download or install dependencies, query the package index, run <code>uv</code>, execute pytest, open EEG data, determine scientific equivalence tolerance, mutate source/test files, alter the pre-existing correspondence record, create a worktree/branch, stage, commit, push, publish, release, or modify downstream AutoClean. MNE call semantics could not be inspected because MNE is not installed in the available system Python.</p>
+
+  <h2>Evidence</h2>
+  <ul>
+    <li><code>Get-Location</code> and <code>git rev-parse --show-toplevel</code>: <code>C:/Users/SYEX8X/Documents/GitHub/autocleaneeg-eeg2source</code>.</li>
+    <li><code>git branch --show-current</code>: <code>codex/271-high-concurrency-source-localization</code>.</li>
+    <li><code>git rev-parse HEAD</code>: <code>0f1c07e26421475be218328ed718ddb997e327b0</code>.</li>
+    <li><code>git status --short --branch</code>: five modified source files; untracked <code>tests/test_raw_chunking.py</code> and pre-existing <code>plans/</code> content.</li>
+    <li><code>git diff --stat</code>: 174 insertions and 72 deletions across the five tracked source files.</li>
+    <li><code>git diff --check</code>: exit 0, no whitespace error reported.</li>
+    <li><code>git log -8 --oneline --decorate</code>: HEAD equals local/remote main; commit <code>22545f4</code> is labeled “Revert to clean version 0.3.7,” followed by package rename and install-helper commits.</li>
+    <li><code>git tag --list</code>: only <code>cli-enhancements-v1.0</code>; no 0.3.7 tag.</li>
+    <li><code>rg</code> over project metadata: <code>pyproject.toml</code> and package <code>__init__.py</code> declare 0.3.7.</li>
+    <li>Local artifact search: no <code>.whl</code>, <code>.tar.gz</code>, package archive, <code>.dist-info</code>, or <code>.egg-info</code> payload found in the repository.</li>
+    <li><code>python -B -c "import importlib.metadata ..."</code>: <code>PackageNotFoundError</code> for <code>autoclean-eeg2source</code>.</li>
+    <li><code>python -B -c "import mne ..."</code>: <code>ModuleNotFoundError</code>; available system Python is 3.13 while project metadata requires Python below 3.13.</li>
+    <li><strong>Inference:</strong> local version strings and commit history are suggestive but insufficient to prove byte/source identity with the published 0.3.7 package.</li>
+  </ul>
+
+  <h2>Dirty-File Ownership</h2>
+  <p>The five source modifications and <code>tests/test_raw_chunking.py</code> predate Echo’s assignment; author and approval remain unknown. Correspondence 001 identifies itself as Raven’s intake record and states that it was the intake’s only addition. Echo preserved all pre-existing bytes and added only this correspondence 002 artifact.</p>
+
+  <h2>Conflict Status</h2>
+  <p><strong>Flag:</strong> implementation is authorized, but proof-first acceptance cannot proceed without authoritative published artifact bytes, and acquiring them would cross the delegation’s network/download stop boundary. <strong>Respond:</strong> Echo inspected local evidence and quarantined the candidate from execution. <strong>Decide:</strong> Raven/PI must authorize a specific artifact acquisition or designate a different immutable baseline. <strong>Document:</strong> this record.</p>
+
+  <h2>Execution Decision or Update</h2>
+  <p><strong>Disposition:</strong> pending; candidate not accepted or rejected. <strong>Owner:</strong> Raven retains integration and PI-facing decision custody; Echo remains maker only if the gate is reopened. <strong>Rationale:</strong> the explicit provenance stop condition controls. <strong>Remaining PI gate:</strong> authorize a network/download of the exact 0.3.7 artifact, provide authoritative local package bytes and hashes, or explicitly approve a different baseline mapping rule.</p>
+
+  <h2>Verification</h2>
+  <p><strong>Checker:</strong> Echo performed maker-side read-only provenance inspection only; no independent checker was contacted. <strong>Exact checks:</strong> repository identity/status/log/tag/diff inspection, metadata search, local artifact search, installed-distribution lookup, and MNE import probe. <strong>Outcome:</strong> repository identity passed; candidate structure inspected; published-artifact mapping blocked; tests not run by design. <strong>Known gaps:</strong> allocation boundary, oracle equivalence, annotation/time behavior, cleanup on failure, memory bound, worker default, validation, API signal, package build/install, and independent QA/review. <strong>Custody:</strong> pre-existing dirty implementation remains untouched and unaccepted.</p>
+
+  <h2>Next Actions</h2>
+  <ol>
+    <li><strong>Raven/PI:</strong> provide authoritative 0.3.7 artifact bytes/hashes locally or explicitly authorize the exact download command. Stop condition: no maker execution until identity is mapped.</li>
+    <li><strong>Echo, if reopened:</strong> compare the artifact payload to a clean Git tree, document packaging-only differences, then add/run the smallest failing allocation-boundary test and locked unchunked oracle before repairing implementation.</li>
+    <li><strong>Raven:</strong> route independent QA/review after maker completion; expected artifacts are separate correspondence records.</li>
+  </ol>
+
+  <h2>Publication Boundary</h2>
+  <p><strong>Sensitivity:</strong> internal engineering provenance record; repository metadata only. <strong>Redactions:</strong> none currently required. <strong>Synthetic versus real:</strong> no EEG data was read and no scientific output was generated. <strong>Safety warning:</strong> do not publish this correspondence, candidate code, or package; do not represent the candidate as verified or shipped. Public archive integration requires Raven routing and explicit approval.</p>
+</body>
+</html>

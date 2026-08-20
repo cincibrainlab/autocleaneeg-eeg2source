@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>007 — Issue 271 maker revision complete</title></head>
+<body>
+  <h1>Correspondence 007: Raw chunking compatibility revision complete</h1>
+  <dl>
+    <dt>From</dt><dd>Echo — Software Engineer</dd>
+    <dt>To</dt><dd>Raven — Engineering Delivery and Loop Coordinator</dd>
+    <dt>Date</dt><dd>2026-08-17 (America/New_York)</dd>
+    <dt>Re</dt><dd>Issue #271 accepted Cricket/Boulder revision findings</dd>
+    <dt>Correspondence number</dt><dd>007</dd>
+    <dt>Source thread ID</dt><dd>01a010a6-ecbb-74e1-938e-dc426c2bb9dd</dd>
+    <dt>Local work thread ID</dt><dd>T-2026-08-17-003</dd>
+    <dt>Role thread</dt><dd>Echo standing project role (current task)</dd>
+    <dt>Status</dt><dd>Maker revision complete; independent re-verification pending</dd>
+    <dt>Record type</dt><dd>PI-authorized revision execution and verification handoff</dd>
+  </dl>
+
+  <h2>Request Summary</h2>
+  <p>Raven authorized Echo, as sole code editor, to address accepted independent findings in Cricket correspondence 006 and Boulder correspondence 006: attached annotation time-base correctness including non-null <code>orig_time</code>, public positional constructor compatibility, truthful Parallel/Cached/GPU Raw routing, explicit legacy <code>n_jobs=-1</code> compatibility separated from source-inverse concurrency, and safe RSS evidence if meaningful. The request retained all commit, push, release, publication, lockfile, correspondence, asset, and downstream gates.</p>
+
+  <h2>Independent Findings Read</h2>
+  <p>Echo read both 006 artifacts in full before editing. Cricket independently reproduced the non-null-<code>orig_time</code>/<code>meas_date=None</code> exception. Boulder additionally reproduced attached-annotation loss from double <code>first_samp</code> shifting, identified constructor parameter insertion, processor-family Raw bypass, and explicit <code>n_jobs=-1</code> breakage. Their findings were treated as accepted revision inputs routed by Raven; Echo did not alter either independent record.</p>
+
+  <h2>Chosen Metadata Compatibility Semantics</h2>
+  <p>The revised contract intentionally preserves the input Raw time base: output <code>first_samp</code>, <code>meas_date</code>, sample count, annotation descriptions/durations, annotation <code>orig_time</code>, and event onsets must match the attached source Raw. This is not a new relative-annotation API. The conversion path receives annotations already attached to the input Raw.</p>
+  <p>For attached annotations with <code>orig_time=None</code>, MNE has already included the source <code>first_time</code> in their stored onsets. Before attaching them to an output Raw with the same <code>first_samp</code>, the implementation subtracts <code>first_samp / sfreq</code>; MNE then applies that offset once, reproducing the original onsets without double shifting. For non-null <code>orig_time</code>, the output <code>Info</code> first receives the input <code>meas_date</code>, and the absolute annotations retain their origin/onsets without normalization. Tests use annotations actually attached to a source Raw, not fresh unattached annotations.</p>
+
+  <h2>Execution Update</h2>
+  <ul>
+    <li>Added <code>meas_date</code> propagation and attached-annotation normalization to the Raw output helper; preserved exact nonzero <code>first_samp</code> and sample count.</li>
+    <li>Moved <code>chunk_seconds</code> to the end of every public constructor’s established positional surface: Sequential, Parallel, Cached, GPU, and Robust.</li>
+    <li>Parallel and Cached Raw input now delegates to <code>SequentialProcessor.process_file</code>, the single bounded chunk implementation. GPU Raw input does the same whether the GPU backend is active or CPU fallback is selected. Epochs retain specialized processor paths.</li>
+    <li>Restored explicit legacy <code>n_jobs=-1</code> as all available outer/label-processing workers while keeping the default at 1. Zero, values below -1, booleans, strings, and non-integers remain rejected.</li>
+    <li>Pinned Parallel forward source-space work and all three GPU fallback inverse calls to <code>n_jobs=1</code>. No new source-worker parameter was necessary because the supported source calls can be safely fixed at one.</li>
+    <li>Preserved the capability signal and strict finite positive bounded <code>chunk_seconds</code> behavior from correspondence 005.</li>
+  </ul>
+
+  <h2>Characterization Before Revision</h2>
+  <ul>
+    <li>Attached annotation exact node: failed before source revision with unexpected <code>meas_date</code> keyword, proving the missing metadata surface.</li>
+    <li>Legacy positional exact node: failed because positional <code>-1</code> bound to <code>chunk_seconds</code> and was rejected.</li>
+    <li>Processor-family Raw routing exact node: failed for Parallel after entering the old epochs/fsaverage path; the attempted fsaverage network fetch failed certificate verification and no product data was downloaded.</li>
+  </ul>
+
+  <h2>Exact After-Revision Verification</h2>
+  <ul>
+    <li><code>test_raw_output_preserves_attached_annotation_time_base</code>: 2 passed in 0.88 seconds, covering <code>orig_time=None</code> and timezone-aware non-null <code>orig_time</code>, nonzero <code>first_samp</code>, equal <code>meas_date</code>, equal onsets, no omission/double shift, and exact four-sample output.</li>
+    <li><code>test_new_constructor_parameters_are_appended_after_legacy_surface</code>: 1 passed in 0.75 seconds, exercising the complete prior positional forms for all processor families and signature ordering.</li>
+    <li><code>test_parallel_family_raw_routes_to_shared_bounded_implementation</code>: 3 passed in 0.80 seconds after initial revision and 3 passed in 0.71 seconds after final GPU error-boundary adjustment.</li>
+    <li><code>test_explicit_legacy_all_core_workers_do_not_reach_forward_inverse</code>: 1 passed in 0.90 seconds; explicit <code>-1</code> resolves to CPU count while forward work receives 1.</li>
+    <li><code>test_gpu_fallback_inverse_is_single_worker</code>: 3 passed in 0.83 seconds across CuPy, PyTorch, and TensorFlow fallback methods.</li>
+    <li>Final <code>tests/test_raw_chunking.py</code>: 25 passed in 1.72 seconds.</li>
+    <li>Final <code>tests/test_robust_processor.py</code>: 5 passed in 0.75 seconds.</li>
+    <li>CLI process-help smoke: exit 0; chunk and worker options remain exposed, with worker default 1.</li>
+    <li>Constructor introspection: exit 0; <code>chunk_seconds</code> is last for all five public constructors; legacy parameters retain their ordering.</li>
+    <li>Named-file <code>py_compile</code>: exit 0.</li>
+    <li><code>git diff --check -- src/autoclean_eeg2source</code>: exit 0; Windows line-ending warnings only.</li>
+    <li>Search for <code>OPENBLAS</code>, <code>MKL_NUM_THREADS</code>, <code>OMP_NUM_THREADS</code>, <code>os.environ</code>, and <code>threadpool_limits</code>: no source/test matches.</li>
+  </ul>
+
+  <h2>Diff and Custody</h2>
+  <p>The tracked feature delta relative to HEAD is seven source files with 239 insertions and 98 deletions. The untracked focused test file is 423 lines with SHA-256 <code>9941d7eeba451f63117aad04b33d39e18b512af88dbff39b0d2bf2d7da72ef02</code>. The extensive sync-generated <code>uv.lock</code> diff remains outside feature ownership; Echo did not edit or attribute it. All earlier correspondence and authoritative/provenance assets remain preserved.</p>
+
+  <h2>RSS and Release Evidence Gap</h2>
+  <p>No peak-RSS number is reported. The available safe synthetic tests mock the dominant inverse/STC allocation, so a process-RSS measurement would not represent the supported workload and could create false assurance. The one-STC-live weak-reference proof, immediate ROI reduction, ordered compact output, and failure cleanup remain verified. A meaningful RSS threshold still requires a bounded local real-inverse fixture and stays a documented release gap, as allowed by the revision request.</p>
+
+  <h2>Scope Limits</h2>
+  <p>No real EEG, fsaverage download, real inverse, production path, EEGLAB round trip, package build/install, full suite, CI, downstream AutoClean, commit, push, merge, release, version change, publication, or archive deployment was performed. The initial pre-revision routing test attempted an MNE dataset fetch through the old path; TLS verification failed and no bypass/retry was attempted. Distribution version custody remains with Raven/PI and must be resolved before publication under any new identity.</p>
+
+  <h2>Conflict Status</h2>
+  <p><strong>Flag:</strong> independent QA/review found metadata, positional API, Raw routing, and worker compatibility defects. <strong>Respond:</strong> Raven accepted and routed the findings; Echo reproduced them with failing tests. <strong>Decide:</strong> the authorized revision uses preserved source time-base metadata, appended parameters, shared Raw routing, legacy outer sentinel support, and source-worker pinning. <strong>Document:</strong> Cricket/Boulder 006 preserve findings; this 007 preserves the maker response. Independent acceptance remains open.</p>
+
+  <h2>Execution Decision or Update</h2>
+  <p><strong>Disposition:</strong> modify; maker revision complete, not independently accepted or release ready. <strong>Owner:</strong> Echo completed code/test revision; Raven retains integration and PI-facing custody. <strong>Rationale:</strong> accepted P1 findings now have focused passing regressions without widening the architecture. <strong>Remaining gates:</strong> independent QA/review, meaningful real-fixture RSS if required, package/build/round-trip evidence, version selection, lockfile disposition, and all Git/release/downstream actions.</p>
+
+  <h2>Verification and Custody</h2>
+  <p><strong>Checker:</strong> Echo performed maker-side revision checks only. <strong>Outcome:</strong> all requested focused Raw/robust/API checks pass; RSS remains explicitly unverified. <strong>Custody:</strong> Raven should route the exact revised checkout back to Cricket and Boulder or other authorized independent checkers. They must not silently edit it; any further code response returns through Raven.</p>
+
+  <h2>Next Actions</h2>
+  <ol>
+    <li><strong>Raven:</strong> freeze and route the revised candidate for independent re-verification.</li>
+    <li><strong>Independent QA:</strong> rerun 25 Raw/API tests, five robust tests, non-null/attached annotation probes, prior positional forms, every advertised Raw route, explicit <code>-1</code>, CLI help, and diff checks.</li>
+    <li><strong>Senior reviewer:</strong> inspect metadata semantics, dispatch, concurrency separation, and compatibility against this exact diff.</li>
+    <li><strong>Raven/PI:</strong> decide real-inverse RSS/build/round-trip requirements, package version, <code>uv.lock</code> custody, and any commit/push/release/publication/downstream action.</li>
+  </ol>
+
+  <h2>Publication Boundary</h2>
+  <p><strong>Sensitivity:</strong> internal engineering revision record. <strong>Redactions:</strong> none required. <strong>Synthetic versus real:</strong> tests used synthetic/mocked arrays only; no patient or production EEG was accessed. <strong>Safety warning:</strong> do not publish this artifact or represent the candidate as independently accepted, merged, released, shipped, or downstream-integrated.</p>
+</body>
+</html>

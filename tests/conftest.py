@@ -7,6 +7,15 @@ import mne
 from mne.epochs import EpochsArray
 
 
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "real_inverse: uses a real (non-mocked, network-fetched fsaverage) "
+        "MNE inverse; opt-in only, set RUN_REAL_INVERSE_TESTS=1 to run "
+        "(see tests/_real_inverse_fixtures.py)",
+    )
+
+
 @pytest.fixture
 def temp_dir(tmp_path):
     """Create a temporary directory for test files."""
